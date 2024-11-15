@@ -13,8 +13,4 @@ import java.util.Optional;
 public interface StudioRepository extends JpaRepository<Studio,Long> {
     Optional<Studio> findByName(String name);
 
-    Optional<Studio> findById(Long id, EntityGraph entityGraph);
-
-    Page<Studio> findAll(Pageable pageable,EntityGraph entityGraph);
-
 }

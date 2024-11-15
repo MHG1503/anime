@@ -79,17 +79,4 @@ public class Anime extends AbstractAuditBase{
             inverseJoinColumns = @JoinColumn(name = "studio_id"))
     private Set<Studio> studios;
 
-
-    @PreRemove
-    void removeAllAssociations(){
-        for(var genre : genres){
-            genre.getAnimeSet().remove(this);
-        }
-        for(var producer : producers){
-            producer.getAnimeSet().remove(this);
-        }
-        for(var studio : studios){
-            studio.getAnimeSet().remove(this);
-        }
-    }
 }

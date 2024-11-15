@@ -33,7 +33,7 @@ public class SecurityConstants {
     };
 
     public static final String[] SYSTEM_WHITELIST = {
-            "api/auth/**",
+            "api/auth/**","api/forgotPassword/**","test/**"
     };
 
     private SecurityConstants() {

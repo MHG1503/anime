@@ -1,14 +1,13 @@
 package com.animewebsite.system.controller;
 
 import com.animewebsite.system.dto.req.ProducerRequest;
-import com.animewebsite.system.model.Producer;
 import com.animewebsite.system.service.ProducerService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("api/producers")
@@ -31,21 +30,19 @@ public class ProducerController {
                 .body(producerService.getProducerById(id));
     }
 
-    @PostMapping(value = "/create" ,consumes = { MediaType.APPLICATION_JSON_VALUE, MediaType.MULTIPART_FORM_DATA_VALUE })
-    public ResponseEntity<?> createProducer(@RequestPart(value = "producerRequest")ProducerRequest producerRequest,
-                                            @RequestPart(value = "image",required = false) MultipartFile multipartFile){
+    @PostMapping(value = "/create" ,consumes = {MediaType.MULTIPART_FORM_DATA_VALUE })
+    public ResponseEntity<?> createProducer(@Valid ProducerRequest producerRequest){
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(producerService.createProducer(producerRequest,multipartFile));
+                .body(producerService.createProducer(producerRequest));
     }
 
-    @PutMapping(value = "update/{id}",consumes = { MediaType.APPLICATION_JSON_VALUE, MediaType.MULTIPART_FORM_DATA_VALUE })
+    @PutMapping(value = "update/{id}",consumes = {MediaType.MULTIPART_FORM_DATA_VALUE })
     public ResponseEntity<?> updateProducer(@PathVariable("id") Long id,
-                                            @RequestPart(value = "producerRequest",required = true)ProducerRequest producerRequest,
-                                            @RequestPart(value = "image",required = false) MultipartFile multipartFile){
+                                            @Valid ProducerRequest producerRequest){
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(producerService.updateProducer(id,producerRequest,multipartFile));
+                .body(producerService.updateProducer(id,producerRequest));
     }
 
     @DeleteMapping("/delete/{id}")

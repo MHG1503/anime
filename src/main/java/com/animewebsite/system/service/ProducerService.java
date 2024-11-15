@@ -3,12 +3,10 @@ package com.animewebsite.system.service;
 import com.animewebsite.system.convert.ProducerMapper;
 import com.animewebsite.system.dto.req.ProducerRequest;
 import com.animewebsite.system.dto.res.PaginatedResponse;
-import com.animewebsite.system.dto.res.detail.ProducerDtoDetail;
 import com.animewebsite.system.dto.res.lazy.ProducerDtoLazy;
 import com.animewebsite.system.model.Image;
 import com.animewebsite.system.model.Producer;
 import com.animewebsite.system.repository.ProducerRepository;
-import com.cosium.spring.data.jpa.entity.graph.domain2.NamedEntityGraph;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -30,7 +28,8 @@ public class ProducerService {
 
     public PaginatedResponse<ProducerDtoLazy> getAllProducers(int pageNum, int pageSize){
         Pageable pageable = PageRequest.of(pageNum - 1,pageSize, Sort.by("name"));
-        Page<Producer> producers = producerRepository.findAll(pageable,NamedEntityGraph.fetching("producer-with-image"));
+        Page<Producer> producers = producerRepository
+                .findAll(pageable);
 
         return new PaginatedResponse<>(
                 producers.getContent().stream().map(producerMapper::producerToProducerDtoLazy).toList(),
@@ -40,20 +39,21 @@ public class ProducerService {
         );
     }
 
-    public ProducerDtoDetail getProducerById(Long id){
-        return producerMapper.producerToProducerDtoDetail(producerRepository
-                .findById(id, NamedEntityGraph.fetching("producer-with-anime-and-image"))
+    public ProducerDtoLazy getProducerById(Long id){
+        return producerMapper.producerToProducerDtoLazy(producerRepository
+                .findById(id)
                 .orElseThrow(()->new RuntimeException("Producer khong ton tai!")));
     }
 
     @Transactional
-    public ProducerDtoDetail createProducer(ProducerRequest producerRequest, MultipartFile multipartFile){
+    public ProducerDtoLazy createProducer(ProducerRequest producerRequest){
         String nameRequest = producerRequest.getName();
         Optional<Producer> producerOptional = producerRepository.findByName(nameRequest);
         if(producerOptional.isPresent()){
             throw new RuntimeException("Producer da ton tai!");
         }
         try {
+            MultipartFile multipartFile = producerRequest.getAvatar();
             Image image = null;
             if(multipartFile != null){
                 Map<String,String> resultUploadImage = cloudinaryService.basicUploadFile(multipartFile);
@@ -70,7 +70,7 @@ public class ProducerService {
                     .name(nameRequest)
                     .image(image)
                     .build();
-            return producerMapper.producerToProducerDtoDetail(producerRepository.save(producer));
+            return producerMapper.producerToProducerDtoLazy(producerRepository.save(producer));
         }catch (Exception e){
             throw new RuntimeException("Upload anh that bai");
         }
@@ -78,12 +78,14 @@ public class ProducerService {
 
 
     @Transactional
-    public ProducerDtoDetail updateProducer(Long id,ProducerRequest producerRequest,MultipartFile multipartFile){
+    public ProducerDtoLazy updateProducer(Long id,ProducerRequest producerRequest){
         Producer existProducer = producerRepository
-                .findById(id,NamedEntityGraph.fetching("producer-with-anime-and-image"))
+                .findById(id)
                 .orElseThrow(()->new RuntimeException("Producer khong ton tai!"));
 
         try {
+            MultipartFile multipartFile = producerRequest.getAvatar();
+
             if(multipartFile != null){
                 Image image = existProducer.getImage();
 
@@ -110,7 +112,7 @@ public class ProducerService {
 
             String nameRequest = producerRequest.getName();
             existProducer.setName(nameRequest);
-            return producerMapper.producerToProducerDtoDetail(producerRepository.save(existProducer));
+            return producerMapper.producerToProducerDtoLazy(producerRepository.save(existProducer));
         }catch (Exception e){
             throw new RuntimeException("Upload anh that bai");
         }
@@ -119,7 +121,7 @@ public class ProducerService {
     @Transactional
     public void deleteProducer(Long id){
         Producer existProducer = producerRepository
-                .findById(id, NamedEntityGraph.fetching("producer-with-anime-and-image"))
+                .findById(id)
                 .orElseThrow(()->new RuntimeException("Producer khong ton tai!"));
         try {
             Image existImage = existProducer.getImage();

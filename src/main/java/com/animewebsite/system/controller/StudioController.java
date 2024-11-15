@@ -3,6 +3,7 @@ package com.animewebsite.system.controller;
 import com.animewebsite.system.dto.req.StudioRequest;
 import com.animewebsite.system.model.Studio;
 import com.animewebsite.system.service.StudioService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -31,21 +32,19 @@ public class StudioController {
                 .body(studioService.getStudioById(id));
     }
 
-    @PostMapping(value = "/create" ,consumes = { MediaType.APPLICATION_JSON_VALUE, MediaType.MULTIPART_FORM_DATA_VALUE })
-    public ResponseEntity<?> createStudio(@RequestPart(value = "studioRequest") StudioRequest studioRequest,
-                                            @RequestPart(value = "image",required = false) MultipartFile multipartFile){
+    @PostMapping(value = "/create" ,consumes = {MediaType.MULTIPART_FORM_DATA_VALUE })
+    public ResponseEntity<?> createStudio(@Valid StudioRequest studioRequest){
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(studioService.createStudio(studioRequest,multipartFile));
+                .body(studioService.createStudio(studioRequest));
     }
 
-    @PutMapping(value = "/update/{id}",consumes = { MediaType.APPLICATION_JSON_VALUE, MediaType.MULTIPART_FORM_DATA_VALUE })
+    @PutMapping(value = "/update/{id}",consumes = {MediaType.MULTIPART_FORM_DATA_VALUE })
     public ResponseEntity<?> updateStudio(@PathVariable("id") Long id,
-                                            @RequestPart(value = "studioRequest",required = true)StudioRequest studioRequest,
-                                            @RequestPart(value = "image",required = false) MultipartFile multipartFile){
+                                            @Valid StudioRequest studioRequest){
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(studioService.updateStudio(id,studioRequest,multipartFile));
+                .body(studioService.updateStudio(id,studioRequest));
     }
 
     @DeleteMapping("/delete/{id}")

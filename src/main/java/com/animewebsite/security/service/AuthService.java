@@ -3,11 +3,18 @@ package com.animewebsite.security.service;
 import com.animewebsite.security.common.utils.JwtTokenUtils;
 import com.animewebsite.security.dto.req.LoginRequest;
 import com.animewebsite.security.dto.req.RegisterRequest;
+import com.animewebsite.system.dto.MailBody;
 import com.animewebsite.system.model.Role;
 import com.animewebsite.system.model.User;
 import com.animewebsite.system.repository.RoleRepository;
 import com.animewebsite.system.repository.UserRepository;
+import com.animewebsite.system.service.CloudinaryService;
+import com.animewebsite.system.service.EmailService;
+import jakarta.mail.MessagingException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -15,6 +22,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,25 +33,52 @@ public class AuthService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
+    private final EmailService emailService;
+    private final CloudinaryService cloudinaryService;
 
-    public User register(RegisterRequest request){
+    @Transactional
+    public String register(RegisterRequest request, String siteUrl) throws MessagingException, UnsupportedEncodingException {
         Role role = roleRepository.findByName("USER").orElseThrow(()->new RuntimeException("Not found role"));
 
         Optional<User> userOptional = userRepository.findByEmail(request.getEmail());
+
         User user = null;
-        if(userOptional.isEmpty()) {
+
+        if(userOptional.isPresent()){
+            user = userOptional.get();
+            if(user.getUsername().equals(request.getUsername())){
+                throw new RuntimeException("Da ton tai username");
+            }
+
+            throw new RuntimeException("Da ton tai email");
+        }else{
+            String randomCode = RandomStringUtils.random(64,true,true);
              user = User
                     .builder()
                     .email(request.getEmail())
                     .password(passwordEncoder.encode(request.getPassword()))
                     .username(request.getUsername())
-                    .imageUrl("default.png")
                     .roles(List.of(role))
-                    .enabled(true)
+                     .verificationCode(randomCode)
+                    .enabled(false)
                     .build();
-            return userRepository.save(user);
+
+            User saveUser = userRepository.save(user);
+
+            emailService.sendVerificationEmailForRegister(saveUser,siteUrl);
+
+            return "Vui long xac nhan dang ky tai khoan thanh cong qua email!";
         }
-        throw new RuntimeException("Da ton tai");
+    }
+
+    @Transactional
+    public String verifyRegisterEmail(String code){
+        User user = userRepository.findByVerificationCode(code)
+                .orElseThrow(()->new RuntimeException("Verification code khong hop le"));
+
+        user.setEnabled(true);
+        userRepository.save(user);
+        return "Xac nhan thanh cong! Bay gio ban co the dang nhap vao website cua chung toi!";
     }
 
     public String login(LoginRequest loginRequest){
