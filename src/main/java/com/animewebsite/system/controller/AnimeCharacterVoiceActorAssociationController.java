@@ -1,5 +1,6 @@
 package com.animewebsite.system.controller;
 
+import com.animewebsite.system.dto.DataResponse;
 import com.animewebsite.system.dto.req.AnimeCharacterVoiceActorRequest;
 import com.animewebsite.system.dto.res.lazy.anime_character_voiceactor.AnimeCharacterVoiceActorDtoLazy;
 import com.animewebsite.system.id_convert.AnimeCharacterVoiceActorIdConverter;
@@ -7,6 +8,7 @@ import com.animewebsite.system.model.AnimeCharacterVoiceActor;
 import com.animewebsite.system.model.pk.AnimeCharacterVoiceActorId;
 import com.animewebsite.system.service.AnimeCharacterVoiceActorService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.repository.query.Param;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,11 +21,31 @@ public class AnimeCharacterVoiceActorAssociationController {
     private final AnimeCharacterVoiceActorService animeCharacterVoiceActorService;
     private final AnimeCharacterVoiceActorIdConverter animeCharacterVoiceActorIdConverter;
 
+    @GetMapping("/{option}/{id}")
+    public ResponseEntity<?> getAllRelationshipByOption(@PathVariable("id") Long id ,
+                                                        @PathVariable("option") String option,
+                                                        @RequestParam(value = "pageNum",required = false,defaultValue = "1") Integer pageNum,
+                                                        @RequestParam(value = "pageSize",required = false,defaultValue = "10") Integer pageSize){
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(
+                        new DataResponse(
+                                HttpStatus.OK.value(),
+                                animeCharacterVoiceActorService.getAllRelationshipByOption(id,option,pageNum,pageSize)
+                        )
+                );
+    }
+
     @PostMapping("/create/link")
     public ResponseEntity<?> handleLinkAssociations(@RequestBody AnimeCharacterVoiceActorRequest animeCharacterVoiceActorRequest){
         return ResponseEntity
-                .status(HttpStatus.OK)
-                .body(animeCharacterVoiceActorService.linkRelationsAnimeCharacterVoiceActor(animeCharacterVoiceActorRequest));
+                .status(HttpStatus.CREATED)
+                .body(
+                        new DataResponse(
+                                HttpStatus.CREATED.value(),
+                                animeCharacterVoiceActorService.linkRelationsAnimeCharacterVoiceActor(animeCharacterVoiceActorRequest)
+                        )
+                );
     }
 
     @PostMapping("/update/link/{id}")
@@ -31,7 +53,12 @@ public class AnimeCharacterVoiceActorAssociationController {
         AnimeCharacterVoiceActorId animeCharacterVoiceActorId = (AnimeCharacterVoiceActorId) animeCharacterVoiceActorIdConverter.fromRequestId(id, AnimeCharacterVoiceActor.class);
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(animeCharacterVoiceActorService.updateLinkRelationsAnimeCharacterVoiceActor(animeCharacterVoiceActorId,animeCharacterVoiceActorRequest));
+                .body(
+                        new DataResponse(
+                                HttpStatus.OK.value(),
+                                animeCharacterVoiceActorService.updateLinkRelationsAnimeCharacterVoiceActor(animeCharacterVoiceActorId,animeCharacterVoiceActorRequest)
+                        )
+                );
     }
 
     @DeleteMapping("/delete/link/{id}")
@@ -40,6 +67,11 @@ public class AnimeCharacterVoiceActorAssociationController {
         animeCharacterVoiceActorService.deleteLink(animeCharacterVoiceActorId);
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body("Delete link thanh cong");
+                .body(
+                        new DataResponse(
+                                HttpStatus.OK.value(),
+                                "Delete link thanh cong"
+                        )
+                );
     }
 }

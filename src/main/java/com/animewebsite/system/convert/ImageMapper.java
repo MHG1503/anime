@@ -11,6 +11,7 @@ public interface ImageMapper {
     ImageMapper INSTANCE = Mappers.getMapper(ImageMapper.class);
 
     @Mapping(source = "imageUrl",target = "imageUrl")
+    @Mapping(source = "id",target = "id")
     ImageDtoLazy imageToImageDtoLazy(Image image);
 
 }

@@ -16,8 +16,8 @@ public class PromotionVideo {
     private Long id;
     private String title;
 
-    @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "trailer_id")
+    @OneToOne(cascade = CascadeType.ALL,orphanRemoval = true)
+    @JoinColumn(name = "youtube_id")
     private Trailer trailer;
 
 }

@@ -1,0 +1,42 @@
+spring:
+  application:
+    name: animewebsite
+  datasource:
+    url: jdbc:mysql://localhost:3306/animewebsitenew
+    username: root
+    password: 1503
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    database-platform: org.hibernate.dialect.MySQLDialect
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: mhg1503@gmail.com
+    password: jezbqhhlkdvodpsr
+    properties:
+      mail:
+        stmp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+  servlet:
+    multipart:
+      max-file-size: 2040MB
+      max-request-size: 2040MB
+cloudinary:
+  cloud-name: dr4map5r3
+  api-key: 834322528472428
+  api-secret: CcHidNkjB-kf9wDcFgpdZTp5l8E
+
+integration:
+  minio:
+    access-key: admin
+    secret-key: admin@2024
+    minio-url: http://localhost:9000
+
+server:
+  port: 7000

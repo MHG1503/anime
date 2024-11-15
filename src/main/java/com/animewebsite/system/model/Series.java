@@ -23,15 +23,17 @@ public class Series {
 
     private String title;
 
-    @OneToMany(fetch = FetchType.LAZY)
-    @JoinColumn(name = "series_id")
+    @OneToMany(fetch = FetchType.LAZY,mappedBy = "series",
+            cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.DETACH, CascadeType.REFRESH})
     private Set<Anime> animeSet;
 
-    public boolean removeAnimeFromSeries(Long animeId){
-        return animeSet.removeIf(anime -> anime.getId().equals(animeId));
+    public boolean removeAnimeFromSeries(Anime anime){
+        anime.setSeries(null);
+        return animeSet.removeIf(a -> a.getId().equals(anime.getId()));
     }
 
     public boolean addAnimeToSeries(Anime anime){
+        anime.setSeries(this);
         return animeSet.add(anime);
     }
 }

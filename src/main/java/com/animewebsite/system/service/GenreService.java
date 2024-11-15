@@ -9,7 +9,10 @@ import com.animewebsite.system.repository.GenreRepository;
 import com.cosium.spring.data.jpa.entity.graph.domain2.NamedEntityGraph;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
+
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -20,6 +23,7 @@ public class GenreService {
     private final GenreRepository genreRepository;
     private final GenreMapper genreMapper;
 
+    @PreAuthorize("hasRole('ADMIN')")
     public GenreDtoDetail getGenreById(Long id){
         return genreMapper.genreToGenreDtoDetail(genreRepository
                 .findById(id, NamedEntityGraph.fetching("genre-anime"))
@@ -27,10 +31,11 @@ public class GenreService {
     }
 
     public Set<GenreDtoLazy> getAllGenres(){
-        return new HashSet<>(genreRepository.findAll().stream().map(genreMapper::genreToGenreDtoLazy).toList());
+        return new HashSet<>(genreRepository.findAll().stream().map(genreMapper::genreToGenreDtoLazy).sorted(Comparator.comparing(GenreDtoLazy::getId)).toList());
     }
 
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
     public GenreDtoLazy createGenre(GenreRequest genreRequest){
         String genreNameRequest = genreRequest.getName();
 
@@ -51,6 +56,7 @@ public class GenreService {
     }
 
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
     public GenreDtoLazy updateGenre(Long id,GenreRequest genreRequest){
         Genre existGenre = genreRepository.findById(id)
                 .orElseThrow(()->new RuntimeException("Khong tim tha the loai (gerne)"));
@@ -64,6 +70,7 @@ public class GenreService {
     }
 
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
     public Genre deleteGenre(Long id){
         Genre genre = genreRepository.findById(id)
                 .orElseThrow(()->new RuntimeException("Khong tim tha the loai (gerne)"));

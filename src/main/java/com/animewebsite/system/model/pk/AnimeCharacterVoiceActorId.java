@@ -8,6 +8,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.io.Serializable;
+import java.util.Comparator;
 
 @Embeddable
 @EqualsAndHashCode
@@ -30,4 +31,10 @@ public class AnimeCharacterVoiceActorId implements Serializable {
     @JoinColumn(name = "voice_actor_id")
     private VoiceActor voiceActor;
 
+    static class CharacterComparator implements Comparator<Character>{
+        @Override
+        public int compare(Character o1, Character o2) {
+            return o1.getName().compareTo(o2.getName());
+        }
+    }
 }

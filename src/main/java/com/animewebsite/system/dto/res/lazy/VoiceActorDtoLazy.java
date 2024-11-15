@@ -1,5 +1,6 @@
 package com.animewebsite.system.dto.res.lazy;
 
+import com.animewebsite.system.dto.res.NationalityResponse;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -14,7 +15,11 @@ public class VoiceActorDtoLazy {
 
     private LocalDate dob; // ngay sinh
 
+    private String about;
+
+    private String url;
+
     private ImageDtoLazy image;
 
-    private String nationality;
+    private NationalityResponse nationality;
 }

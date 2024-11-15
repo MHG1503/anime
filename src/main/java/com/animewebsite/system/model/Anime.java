@@ -30,12 +30,14 @@ public class Anime extends AbstractAuditBase{
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(unique = true)
     private String name;
 
     @OneToMany(fetch = FetchType.LAZY,cascade = {CascadeType.MERGE,CascadeType.PERSIST,CascadeType.REMOVE})
     @JoinColumn(name = "anime_id")
     private Set<AlternativeTitle> alternativeTitles; // Ten dong nghia
 
+    @Column(length = 2000)
     private String description;
 
     @Enumerated(EnumType.STRING)
@@ -56,6 +58,10 @@ public class Anime extends AbstractAuditBase{
     private int year;
 
     private int episodes;
+
+    @ManyToOne
+    @JoinColumn(name = "series_id")
+    private Series series;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "animes_genres",
@@ -79,17 +85,4 @@ public class Anime extends AbstractAuditBase{
             inverseJoinColumns = @JoinColumn(name = "studio_id"))
     private Set<Studio> studios;
 
-
-    @PreRemove
-    void removeAllAssociations(){
-        for(var genre : genres){
-            genre.getAnimeSet().remove(this);
-        }
-        for(var producer : producers){
-            producer.getAnimeSet().remove(this);
-        }
-        for(var studio : studios){
-            studio.getAnimeSet().remove(this);
-        }
-    }
 }

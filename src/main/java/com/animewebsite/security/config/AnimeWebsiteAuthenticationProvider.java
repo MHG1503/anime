@@ -18,15 +18,19 @@ import org.springframework.stereotype.Component;
 public class AnimeWebsiteAuthenticationProvider implements AuthenticationProvider {
     private final PasswordEncoder passwordEncoder;
     private final UserDetailsService userDetailsService;
+
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
         String username = authentication.getName();
         String password = authentication.getCredentials().toString();
         UserDetails userDetails = userDetailsService.loadUserByUsername(username);
         if(userDetails != null && passwordEncoder.matches(password,userDetails.getPassword())){
-            return new UsernamePasswordAuthenticationToken(userDetails,null,userDetails.getAuthorities());
+            if(userDetails.isEnabled()) {
+                return new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+            }
+            throw new RuntimeException("Vui long xac nhan tai khoan qua email!");
         }else{
-            throw new BadCredentialsException("Invalid password");
+            throw new BadCredentialsException("Mat khau sai!");
         }
     }
 

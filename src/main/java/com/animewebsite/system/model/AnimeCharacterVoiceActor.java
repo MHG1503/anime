@@ -39,4 +39,6 @@ public class AnimeCharacterVoiceActor  extends AbstractAuditBase{
 
     @Enumerated(EnumType.STRING)
     private CharacterRole characterRole;
+
+
 }

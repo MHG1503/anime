@@ -39,6 +39,8 @@ public class AnimeDtoDetail {
 
     private int episodes;
 
+    private SeriesDtoLazy seriesDtoLazy;
+
     private ImageDtoLazy imageDtoLazy;
 
 //    private List<PromotionVideo> promo;

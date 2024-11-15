@@ -11,13 +11,17 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.Set;
+
 @Getter
 @Setter
 public class UpdateAnimeRequest {
     @NotBlank
     private String name; // chinh la title luon;
+    private Set<AlternativeTitleRequest> alternativeTitles; // Ten dong nghia
     @NotBlank
     private String description;
+    private Long seriesId;
     private Status status;
     private Type type;
     private Aired aired; // ngay phat song
@@ -27,10 +31,12 @@ public class UpdateAnimeRequest {
     @Min(value = 1)
     @Max(value = 10)
     private Double malScore; // diem dua tren trang web MyAnimeList
-    @NotBlank
     private Season season;
     @NotNull
     private Integer year;
     @NotNull
     private Integer episodes;
+    private Set<Long> genresIds;
+    private Set<Long> producersIds;
+    private Set<Long> studiosIds;
 }

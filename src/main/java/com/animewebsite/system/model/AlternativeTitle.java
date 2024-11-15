@@ -18,7 +18,7 @@ public class AlternativeTitle {
     private Long id;
 
     @Enumerated(EnumType.STRING)
-    private TitleType titleType;
+    private TitleType language;
 
-    private String title;
+    private String alternativeName;
 }

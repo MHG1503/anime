@@ -1,8 +1,8 @@
 package com.animewebsite.system.service;
 
 import com.animewebsite.system.convert.AnimeMapper;
+import com.animewebsite.system.dto.req.AlternativeTitleRequest;
 import com.animewebsite.system.dto.req.CreateAnimeRequest;
-import com.animewebsite.system.dto.req.GenreRequest;
 import com.animewebsite.system.dto.req.UpdateAnimeRequest;
 import com.animewebsite.system.dto.res.detail.AnimeDtoDetail;
 import com.animewebsite.system.dto.res.lazy.AnimeDtoLazy;
@@ -21,10 +21,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -32,7 +29,13 @@ public class AnimeService {
     private final AnimeRepository animeRepository;
     private final AnimeMapper animeMapper;
     private final AnimeCharacterVoiceActorRepository animeCharacterVoiceActorRepository;
+    private final SeriesRepository seriesRepository;
+    private final GenreRepository genreRepository;
+    private final ProducerRepository producerRepository;
+    private final StudioRepository studioRepository;
+    private final AlternativeTitleRepository alternativeTitleRepository;
     private final CloudinaryService cloudinaryService;
+
 
     public PaginatedResponse<AnimeDtoLazy> getAllAnime(int pageNum, int pageSize){
         Pageable pageable = PageRequest.of(pageNum - 1,pageSize);
@@ -47,6 +50,30 @@ public class AnimeService {
         );
     }
 
+    public PaginatedResponse<AnimeDtoLazy> getAllAnimeBySeriesId(int pageNum, int pageSize, Long seriesId){
+        Pageable pageable = PageRequest.of(pageNum - 1,pageSize);
+
+        Page<Anime> animePage = null;
+        if(seriesId != null){
+            Series series = seriesRepository
+                    .findById(seriesId)
+                    .orElseThrow(()-> new RuntimeException("Khong tim thay series nay!"));
+
+            animePage = animeRepository.findBySeriesId(series.getId(),pageable);
+        }else{
+            animePage = animeRepository.findBySeriesIdIsNull(pageable);
+
+        }
+
+        return new PaginatedResponse<>(
+                animePage.getContent().stream().map(animeMapper::animeToAnimeDtoLazy).toList(),
+                animePage.getTotalPages(),
+                animePage.getNumber() + 1,
+                animePage.getTotalElements()
+        );
+    }
+
+
     public AnimeDtoDetail getAnimeById(Long id){
         return animeMapper.animeToAnimeDtoDetail(
                 animeRepository
@@ -57,7 +84,25 @@ public class AnimeService {
     @Transactional
     public AnimeDtoLazy createAnime(CreateAnimeRequest createAnimeRequest, MultipartFile multipartFile){
         String nameRequest = createAnimeRequest.getName();
-        Set<AlternativeTitle> alternativeTitle = createAnimeRequest.getAlternativeTitles();
+
+        Set<AlternativeTitleRequest> alternativeTitleRequests = createAnimeRequest.getAlternativeTitles();
+        Set<AlternativeTitle> alternativeTitles = new HashSet<>();
+
+        // handle alternative title request
+        for(var request : alternativeTitleRequests){
+            Optional<AlternativeTitle> alternativeTitleOptional = alternativeTitleRepository
+                    .findByAlternativeName(request.getAlternativeName());
+            if(alternativeTitleOptional.isPresent()){
+                throw new RuntimeException("Ten : " + request.getAlternativeName() + " da bi trung");
+            }
+            alternativeTitles.add(AlternativeTitle
+                    .builder()
+                            .id(null)
+                            .alternativeName(request.getAlternativeName())
+                            .language(request.getLanguage())
+                    .build());
+        }
+
         String descriptionRequest = createAnimeRequest.getDescription();
         Status statusRequest = createAnimeRequest.getStatus();
         Type typeRequest = createAnimeRequest.getType();
@@ -67,56 +112,155 @@ public class AnimeService {
         Season seasonRequest = createAnimeRequest.getSeason();
         Integer yearRequest = createAnimeRequest.getYear();
         Integer episodesRequest = createAnimeRequest.getEpisodes();
+        Long seriesId = createAnimeRequest.getSeriesId();
+
+        //handle series request
+        Series series = seriesRepository
+                .findById(seriesId)
+                .orElseThrow(()-> new RuntimeException("Khong tim thay series!"));
+
+        // handle genres request
         Set<Long> genresIdsRequest = createAnimeRequest.getGenresIds();
+        Set<Genre> genres = new HashSet<>(genreRepository.findAllById(genresIdsRequest));
+
+        // handle producers request
         Set<Long> producersIdsRequest = createAnimeRequest.getProducersIds();
+        Set<Producer> producers = new HashSet<>(producerRepository.findAllById(producersIdsRequest));
+
+        // handle studio request
         Set<Long> studiosIdsRequest = createAnimeRequest.getStudiosIds();
+        Set<Studio> studios = new HashSet<>(studioRepository.findAllById(studiosIdsRequest));
 
         Optional<Anime> animeOptional = animeRepository.findByName(nameRequest);
         if(animeOptional.isPresent()){
             throw new RuntimeException("Anime da ton tai roi");
         }
-        Image image = null;
-        try {
-            Map<String, String> imagesUrl = cloudinaryService.uploadFile(multipartFile);
 
-            //TODO: handle image;
-            image = Image
+        // handle image
+        try {
+            Image image = null;
+            if (multipartFile != null && !multipartFile.isEmpty()) {
+                Map<String, String> imagesUrl = cloudinaryService.uploadFile(multipartFile);
+
+                image = Image
+                        .builder()
+                        .imageUrl(imagesUrl.get("image"))
+                        .smallImageUrl(imagesUrl.get("small"))
+                        .mediumImageUrl(imagesUrl.get("medium"))
+                        .largeImageUrl(imagesUrl.get("large"))
+                        .mediumImageUrl(imagesUrl.get("maximum"))
+                        .publicId(imagesUrl.get("publicId"))
+                        .build();
+            }
+            Anime anime = Anime
                     .builder()
-                    .imageUrl(imagesUrl.get("image"))
-                    .smallImageUrl(imagesUrl.get("small"))
-                    .mediumImageUrl(imagesUrl.get("medium"))
-                    .largeImageUrl(imagesUrl.get("large"))
-                    .mediumImageUrl(imagesUrl.get("maximum"))
+                    .name(nameRequest)
+                    .alternativeTitles(alternativeTitles)
+                    .description(descriptionRequest)
+                    .status(statusRequest)
+                    .type(typeRequest)
+                    .series(series)
+                    .aired(airedRequest)
+                    .duration(durationRequest)
+                    .malScore(malScoreRequest)
+                    .season(seasonRequest)
+                    .year(yearRequest)
+                    .episodes(episodesRequest)
+                    .image(image)
+                    .genres(genres)
+                    .producers(producers)
+                    .studios(studios)
                     .build();
+
+            return animeMapper.animeToAnimeDtoLazy(animeRepository.save(anime));
         }catch (Exception e){
-            throw new RuntimeException("Upload anh that bai!");
+            throw new RuntimeException("Upload anh that bai");
         }
-        Anime anime = Anime
-                .builder()
-                .name(nameRequest)
-                .alternativeTitles(alternativeTitle)
-                .description(descriptionRequest)
-                .status(statusRequest)
-                .type(typeRequest)
-                .aired(airedRequest)
-                .duration(durationRequest)
-                .malScore(malScoreRequest)
-                .season(seasonRequest)
-                .year(yearRequest)
-                .episodes(episodesRequest)
-                .image(image)
-//                .genres(genresRequest)
-//                .producers(producersRequest)
-//                .studios(studiosRequest)
-                .genres(new HashSet<>())
-                .producers(new HashSet<>())
-                .studios(new HashSet<>())
-                .build();
-        return animeMapper.animeToAnimeDtoLazy(animeRepository.save(anime));
     }
 
     @Transactional
-    public AnimeDtoLazy updateAnime(Long id, UpdateAnimeRequest updateAnimeRequest){
+    public AnimeDtoLazy updateAnime(Long id, UpdateAnimeRequest updateAnimeRequest,MultipartFile multipartFile){
+
+        Anime existAnime = animeRepository.findById(id)
+                .orElseThrow(()->new RuntimeException("Không tìm thấy anime"));
+
+        try {
+            if (multipartFile != null && !multipartFile.isEmpty()) {
+                Image image = existAnime.getImage();
+
+                if (image != null && image.getPublicId() != null) { // truong hop studio da co anh roi (image != null)
+
+                    cloudinaryService.deleteImage(image.getPublicId()); // xoa anh cu truoc khi upload anh moi
+
+                    Map<String, String> imagesUrl = cloudinaryService.uploadFile(multipartFile);
+                    image.setImageUrl(imagesUrl.get("image"));
+                    image.setSmallImageUrl(imagesUrl.get("small"));
+                    image.setMediumImageUrl(imagesUrl.get("medium"));
+                    image.setLargeImageUrl(imagesUrl.get("large"));
+                    image.setMaximumImageUrl(imagesUrl.get("maximum"));
+                    image.setPublicId(imagesUrl.get("public_id"));
+
+                } else { // truong hop studio chua co anh ( image == null)
+
+                    Map<String, String> imagesUrl = cloudinaryService.uploadFile(multipartFile);
+
+                    image = Image
+                            .builder()
+                            .imageUrl(imagesUrl.get("image"))
+                            .smallImageUrl(imagesUrl.get("small"))
+                            .mediumImageUrl(imagesUrl.get("medium"))
+                            .largeImageUrl(imagesUrl.get("large"))
+                            .mediumImageUrl(imagesUrl.get("maximum"))
+                            .publicId(imagesUrl.get("publicId"))
+                            .build();
+                    existAnime.setImage(image);
+                }
+            }
+        }catch (Exception e){
+            throw new RuntimeException("Upload anh that bai!");
+        }
+
+        Set<AlternativeTitleRequest> alternativeTitleRequests = updateAnimeRequest.getAlternativeTitles();
+        Set<AlternativeTitle> alternativeTitles = new HashSet<>();
+
+        //handle alternative title request
+        for(var request : alternativeTitleRequests){
+            Optional<AlternativeTitle> alternativeTitleOptional = alternativeTitleRepository
+                    .findById(request.getId());
+            AlternativeTitle alternativeTitle = null;
+            if(alternativeTitleOptional.isPresent()){
+                alternativeTitle = alternativeTitleOptional.get();
+                alternativeTitle.setAlternativeName(request.getAlternativeName());
+                alternativeTitle.setLanguage(request.getLanguage());
+            }else{
+                alternativeTitle = AlternativeTitle
+                        .builder()
+                        .id(null)
+                        .alternativeName(request.getAlternativeName())
+                        .language(request.getLanguage())
+                        .build();
+            }
+            alternativeTitles.add(alternativeTitle);
+        }
+
+        Long seriesId = updateAnimeRequest.getSeriesId();
+        //handle series request
+        Series series = seriesRepository
+                .findById(seriesId)
+                .orElseThrow(()-> new RuntimeException("Khong tim thay series!"));
+
+        // handle genres request
+        Set<Long> genresIdsRequest = updateAnimeRequest.getGenresIds();
+        Set<Genre> genres = new HashSet<>(genreRepository.findAllById(genresIdsRequest));
+
+        // handle producers request
+        Set<Long> producersIdsRequest = updateAnimeRequest.getProducersIds();
+        Set<Producer> producers = new HashSet<>(producerRepository.findAllById(producersIdsRequest));
+
+        // handle studio request
+        Set<Long> studiosIdsRequest = updateAnimeRequest.getStudiosIds();
+        Set<Studio> studios = new HashSet<>(studioRepository.findAllById(studiosIdsRequest));
+
         String nameRequest = updateAnimeRequest.getName();
         String descriptionRequest = updateAnimeRequest.getDescription();
         Status statusRequest = updateAnimeRequest.getStatus();
@@ -128,9 +272,6 @@ public class AnimeService {
         Integer yearRequest = updateAnimeRequest.getYear();
         Integer episodesRequest = updateAnimeRequest.getEpisodes();
 
-        Anime existAnime = animeRepository.findById(id)
-                .orElseThrow(()->new RuntimeException("Không tìm thấy anime"));
-
         existAnime.setName(nameRequest);
         existAnime.setDescription(descriptionRequest);
         existAnime.setStatus(statusRequest);
@@ -140,12 +281,19 @@ public class AnimeService {
         existAnime.setSeason(seasonRequest);
         existAnime.setYear(yearRequest);
         existAnime.setEpisodes(episodesRequest);
+        existAnime.setSeries(series);
+        existAnime.setGenres(genres);
+        existAnime.setStudios(studios);
+        existAnime.setProducers(producers);
         existAnime.setAired(airedRequest);
+        existAnime.setAlternativeTitles(alternativeTitles);
         return animeMapper.animeToAnimeDtoLazy(animeRepository.save(existAnime));
     }
 
+
+
     @Transactional
-    public AnimeDtoLazy deleteAnimeById(Long id){
+    public void deleteAnimeById(Long id){
         Anime anime = animeRepository
                 .findById(id, NamedEntityGraph.fetching("anime-with-alternative_name-image-genre-producer-studio"))
                 .orElseThrow(()-> new RuntimeException("Khong tim thay anime voi id: " + id));
@@ -163,6 +311,6 @@ public class AnimeService {
 
         animeRepository.delete(anime);
 
-        return animeMapper.animeToAnimeDtoLazy(anime);
+        animeMapper.animeToAnimeDtoLazy(anime);
     }
 }

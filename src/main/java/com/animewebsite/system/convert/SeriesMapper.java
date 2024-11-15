@@ -6,11 +6,9 @@ import com.animewebsite.system.model.Series;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-@Mapper(componentModel = "spring",uses = {AnimeMapper.class})
+@Mapper(componentModel = "spring")
 public interface SeriesMapper {
 
     SeriesDtoLazy seriesToSeriesDtoLazy(Series series);
 
-    @Mapping(source = "animeSet",target = "animeDtoLazySet")
-    SeriesDtoDetail seriesToSeriesDtoDetail(Series series);
 }

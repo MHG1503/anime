@@ -13,15 +13,13 @@ public class VoiceActorRequest {
     @NotBlank
     private String name;
 
-    @NonNull
     private String dob; // ngay sinh
 
-    @NotBlank
     private String about; // gioi thieu ve nguoi long tieng
 
     @NotBlank
     private String url; // url dan den trang MAL
 
-    private String nationality;
+    private NationalityRequest nationality;
 
 }

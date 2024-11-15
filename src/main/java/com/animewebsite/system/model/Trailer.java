@@ -14,11 +14,12 @@ import lombok.*;
 public class Trailer {
 
     @Id
+    @Column(name = "youtube_id")
     private String youtubeId;
 
     private String videoUrl;
 
-    @OneToOne
+    @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "image_id")
     private Image image;
 

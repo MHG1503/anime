@@ -5,6 +5,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.AuthorityUtils;
@@ -15,6 +16,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.List;
 
+@Slf4j
 public class JwtTokenUtils {
     private static final byte[] API_SECRET_KEY = SecurityConstants.JWT_SECRET_KEY.getBytes(StandardCharsets.UTF_8);
     private static final SecretKey secretKey = Keys.hmacShaKeyFor(API_SECRET_KEY);
@@ -76,6 +78,7 @@ public class JwtTokenUtils {
         Claims claims = extractAllClaims(token);
         List<GrantedAuthority> authorities = getAuthorities(claims);
         String username = claims.getSubject();
+        log.info(authorities.toString());
         return new UsernamePasswordAuthenticationToken(username,null,authorities
         );
     }

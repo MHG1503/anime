@@ -4,7 +4,8 @@ import com.animewebsite.system.convert.AnimeCharacterVoiceActorMapper;
 import com.animewebsite.system.dto.req.AnimeCharacterVoiceActorRequest;
 import com.animewebsite.system.dto.res.PaginatedResponse;
 import com.animewebsite.system.dto.res.lazy.anime_character_voiceactor.AnimeCharacterVoiceActorDtoLazy;
-import com.animewebsite.system.dto.res.lazy.anime_character_voiceactor.AnimeVoiceActorDtoLazy;
+
+import com.animewebsite.system.dto.res.lazy.anime_character_voiceactor.CharacterVoiceActorDtoLazy;
 import com.animewebsite.system.model.Anime;
 import com.animewebsite.system.model.AnimeCharacterVoiceActor;
 import com.animewebsite.system.model.Character;
@@ -18,11 +19,12 @@ import com.animewebsite.system.repository.VoiceActorRepository;
 import com.cosium.spring.data.jpa.entity.graph.domain2.NamedEntityGraph;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.util.Comparator;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -37,8 +39,53 @@ public class AnimeCharacterVoiceActorService {
     private final VoiceActorRepository voiceActorRepository;
 
 
+    public PaginatedResponse<?> getAllRelationshipByOption(Long id,String option, int pageNum, int pageSize){
+        return switch (option){
+            case "anime" -> {
+                Pageable pageable = PageRequest.of(pageNum - 1, pageSize).withSort(Sort.by("animeCharacterVoiceActorId.character.name"));
+
+                var result = animeCharacterVoiceActorRepository
+                        .findByAnimeCharacterVoiceActorIdAnimeId(id,NamedEntityGraph.fetching("anime-character-voice_actor"),pageable);
+                yield new PaginatedResponse<>(
+                        result.stream().map(animeCharacterVoiceActorMapper::animeCharacterVoiceActorToCharacterVoiceActorDtoLazy).toList(),
+                        result.getTotalPages(),
+                        result.getNumber() + 1,
+                        result.getTotalElements()
+                );
+            }
+
+            case "character" -> {
+                Pageable pageable = PageRequest.of(pageNum - 1, pageSize).withSort(Sort.by("animeCharacterVoiceActorId.character.name"));
+
+                var result = animeCharacterVoiceActorRepository
+                        .findByAnimeCharacterVoiceActorIdCharacterId(id,NamedEntityGraph.fetching("anime-character-voice_actor"),pageable);
+                yield new PaginatedResponse<>(
+                        result.stream().map(animeCharacterVoiceActorMapper::animeCharacterVoiceActorToAnimeVoiceActorDtoLazy).toList(),
+                        result.getTotalPages(),
+                        result.getNumber() + 1,
+                        result.getTotalElements()
+                );
+            }
+
+            case "voice_actor" -> {
+                Pageable pageable = PageRequest.of(pageNum - 1, pageSize).withSort(Sort.by("animeCharacterVoiceActorId.voiceActor.name"));
+
+                var result = animeCharacterVoiceActorRepository
+                        .findByAnimeCharacterVoiceActorIdVoiceActorId(id,NamedEntityGraph.fetching("anime-character-voice_actor"),pageable);
+                yield new PaginatedResponse<>(
+                        result.stream().map(animeCharacterVoiceActorMapper::animeCharacterVoiceActorToAnimeCharacterDtoLazy).toList(),
+                        result.getTotalPages(),
+                        result.getNumber() + 1,
+                        result.getTotalElements()
+                );
+            }
+
+            default -> null;
+        };
+    }
+
     @Transactional
-    public AnimeCharacterVoiceActorDtoLazy linkRelationsAnimeCharacterVoiceActor(AnimeCharacterVoiceActorRequest animeCharacterVoiceActorRequest){
+    public CharacterVoiceActorDtoLazy linkRelationsAnimeCharacterVoiceActor(AnimeCharacterVoiceActorRequest animeCharacterVoiceActorRequest){
 
         Long animeId = animeCharacterVoiceActorRequest.getAnimeId();
         Long characterId = animeCharacterVoiceActorRequest.getCharacterId();
@@ -66,7 +113,15 @@ public class AnimeCharacterVoiceActorService {
                     .findById(voiceActorId)
                     .orElseThrow(() -> new RuntimeException("Khong tim thay nguoi long tieng (voice actor) voi id: " + voiceActorId));
         }
-        
+
+        boolean isAnimeCharacterVoiceActor = animeCharacterVoiceActorRepository
+                .existsByAnimeIdCharacterIdAndCharacterRole(
+                        animeId,
+                        characterId,
+                        !animeCharacterVoiceActorRequest.getCharacterRole().equals(CharacterRole.MAIN) ? CharacterRole.MAIN : CharacterRole.SUPPORTING);
+        if(isAnimeCharacterVoiceActor){
+            throw new RuntimeException("Khong the them character voi nhieu role trong 1 bo anime !!!");
+        }
         AnimeCharacterVoiceActorId animeCharacterVoiceActorId = new AnimeCharacterVoiceActorId(character,anime,voiceActor);
 
         Optional<AnimeCharacterVoiceActor> animeCharacterVoiceActorOptional = animeCharacterVoiceActorRepository.findById(animeCharacterVoiceActorId);
@@ -84,7 +139,7 @@ public class AnimeCharacterVoiceActorService {
                 .build();
 
         return animeCharacterVoiceActorMapper
-                .animeCharacterVoiceActorToAnimeCharacterVoiceActorDtoLazy(animeCharacterVoiceActorRepository.save(animeCharacterVoiceActor));
+                .animeCharacterVoiceActorToCharacterVoiceActorDtoLazy(animeCharacterVoiceActorRepository.save(animeCharacterVoiceActor));
     }
 
     @Transactional

@@ -1,10 +1,17 @@
 package com.animewebsite.system.dto.req;
 
-import lombok.Getter;
-import lombok.Setter;
+import jakarta.validation.constraints.NotBlank;
+import lombok.Data;
+import org.springframework.web.multipart.MultipartFile;
 
-@Getter
-@Setter
+@Data
 public class StudioRequest {
+    @NotBlank
     private String name;
+
+    private String introduce;
+
+    private String date;
+
+    private MultipartFile avatar;
 }

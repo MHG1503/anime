@@ -11,8 +11,9 @@ import java.util.Set;
 @Mapper(componentModel = "spring")
 public interface AlternativeTitleMapper {
 
-    @Mapping(source = "title",target = "title")
-    @Mapping(source = "titleType",target = "titleType")
+    @Mapping(source = "id",target = "id")
+    @Mapping(source = "alternativeName",target = "alternativeName")
+    @Mapping(source = "language",target = "language")
     AlternativeTitleDtoLazy alternativeTitleToAlternativeTitleDtoLazy(AlternativeTitle alternativeTitle);
 
     Set<AlternativeTitleDtoLazy> alternativeTitleSetToAlternativeTitleDtoLazySet(Set<AlternativeTitle> alternativeTitles);

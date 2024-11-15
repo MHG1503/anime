@@ -18,7 +18,9 @@ import java.util.Set;
 
 @Mapper(componentModel = "spring",
         uses = {ImageMapper.class,
-                AlternativeTitleMapper.class})
+                AlternativeTitleMapper.class,
+                SeriesMapper.class
+        })
 public interface AnimeMapper{
 
     @Mapping(source = "image",target = "imageDtoLazy")
@@ -31,6 +33,7 @@ public interface AnimeMapper{
     @Mapping(source = "studios",target = "studioDtoLazies",qualifiedByName = "toStudioDtoLazy")
     @Mapping(source = "producers",target = "producerDtoLazies", qualifiedByName = "toProducerDtoLazy")
     @Mapping(source = "genres",target = "genreDtoLazies", qualifiedByName = "toGenreDtoLazy")
+    @Mapping(source = "series",target = "seriesDtoLazy")
     AnimeDtoDetail animeToAnimeDtoDetail(Anime anime);
 
     @Named("toStudioDtoLazy")

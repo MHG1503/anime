@@ -13,9 +13,12 @@ import java.util.Optional;
 
 @Repository
 public interface AnimeRepository extends JpaRepository<Anime,Long> {
-
-    @Query("SELECT a FROM Anime a JOIN FETCH a.alternativeTitles al WHERE a.name =:name OR al.title =:name")
+    @Query("SELECT a FROM Anime a JOIN FETCH a.alternativeTitles al WHERE a.name =:name OR al.alternativeName =:name")
     Optional<Anime> findByName(@Param("name") String name);
+
+    Page<Anime> findBySeriesId(@Param("seriesId") Long seriesId, Pageable pageable);
+
+    Page<Anime> findBySeriesIdIsNull(Pageable pageable);
 
     Optional<Anime> findById(Long id, EntityGraph entityGraph);
 }

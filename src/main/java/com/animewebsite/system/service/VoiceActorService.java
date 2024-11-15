@@ -4,10 +4,10 @@ import com.animewebsite.system.convert.AnimeCharacterVoiceActorMapper;
 import com.animewebsite.system.convert.VoiceActorMapper;
 import com.animewebsite.system.dto.req.VoiceActorRequest;
 import com.animewebsite.system.dto.res.PaginatedResponse;
-import com.animewebsite.system.dto.res.detail.VoiceActorDtoDetail;
 import com.animewebsite.system.dto.res.lazy.VoiceActorDtoLazy;
 import com.animewebsite.system.model.Image;
 import com.animewebsite.system.model.VoiceActor;
+import com.animewebsite.system.model.enums.Nationality;
 import com.animewebsite.system.repository.AnimeCharacterVoiceActorRepository;
 import com.animewebsite.system.repository.VoiceActorRepository;
 import com.cosium.spring.data.jpa.entity.graph.domain2.NamedEntityGraph;
@@ -16,9 +16,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
@@ -45,15 +47,25 @@ public class VoiceActorService {
         );
     }
 
-    public VoiceActorDtoDetail getVoiceActorById(Long id){
+    public VoiceActorDtoLazy getVoiceActorById(Long id){
         VoiceActor voiceActor = voiceActorRepository
-                .findById(id,NamedEntityGraph.fetching("voice_actor-with-image-anime-and-character"))
+                .findById(id,NamedEntityGraph.fetching("voice_actor-with-image"))
                 .orElseThrow(()->new RuntimeException("Khong tim thay voice actor voi id la: " + id));
 
-        return animeCharacterVoiceActorMapper.voiceActorToVoiceActorDtoDetail(voiceActor);
+        return voiceActorMapper.voiceActorToVoiceActorDtoLazy(voiceActor);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    public Object getAllVoiceActorSelections(){
+        return voiceActorRepository
+                .findAll()
+                .stream()
+                .map(voiceActorMapper::voiceActorToVoiceActorDtoSelect)
+                .toList();
     }
 
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
     public VoiceActorDtoLazy createVoiceActor(VoiceActorRequest voiceActorRequest, MultipartFile multipartFile){
         String nameRequest = voiceActorRequest.getName();
         Optional<VoiceActor> voiceActorOptional = voiceActorRepository.findByName(nameRequest);
@@ -62,8 +74,9 @@ public class VoiceActorService {
             throw new RuntimeException("Voice actor: " + nameRequest + " nay da ton tai!");
         }
 
+        Image image = null;
         try{
-            Image image = null;
+
             if(multipartFile != null){
                 Map<String,String> map = cloudinaryService.basicUploadFile(multipartFile);
 
@@ -77,7 +90,7 @@ public class VoiceActorService {
             String aboutRequest = voiceActorRequest.getAbout();
             String malUrl = voiceActorRequest.getUrl();
             LocalDate dob = LocalDate.parse(voiceActorRequest.getDob(),formatter);
-            String nationality = voiceActorRequest.getNationality();
+            String nationality = voiceActorRequest.getNationality().getName();
 
             VoiceActor voiceActor = VoiceActor
                     .builder()
@@ -86,21 +99,30 @@ public class VoiceActorService {
                     .about(aboutRequest)
                     .url(malUrl)
                     .dob(dob)
-                    .nationality(nationality)
+                    .nationality(Nationality.valueOf(nationality))
                     .build();
-
             return voiceActorMapper.voiceActorToVoiceActorDtoLazy(voiceActorRepository.save(voiceActor));
-        }catch (Exception e){
+        }catch (IOException ioException){
             throw new RuntimeException("Upload anh that bai!");
+        }catch (Exception e){
+            if(image != null){
+                try {
+                    cloudinaryService.deleteImage(image.getPublicId());
+                } catch (Exception ex) {
+                    throw new RuntimeException("Xoa anh khong thong cong sau khi khong them duoc du lieu voice actor vao DB!");
+                }
+            }
+            throw new RuntimeException("Them voice actor that bai!");
         }
     }
 
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
     public VoiceActorDtoLazy updateVoiceActor(Long id,
                                               VoiceActorRequest voiceActorRequest,
                                               MultipartFile multipartFile){
         VoiceActor existVoiceActor = voiceActorRepository
-                .findById(id,NamedEntityGraph.fetching("voice_actor-with-image-anime-and-character"))
+                .findById(id,NamedEntityGraph.fetching("voice_actor-with-image"))
                 .orElseThrow(()-> new RuntimeException("Khong tim thay voice actor id: " + id));
 
         try {
@@ -133,24 +155,27 @@ public class VoiceActorService {
             String aboutRequest = voiceActorRequest.getAbout();
             String malUrl = voiceActorRequest.getUrl();
             LocalDate dob = LocalDate.parse(voiceActorRequest.getDob(),formatter);
-            String nationality = voiceActorRequest.getNationality();
+            String nationality = voiceActorRequest.getNationality().getName();
 
             existVoiceActor.setName(nameRequest);
             existVoiceActor.setAbout(aboutRequest);
             existVoiceActor.setUrl(malUrl);
             existVoiceActor.setDob(dob);
-            existVoiceActor.setNationality(nationality);
+            existVoiceActor.setNationality(Nationality.valueOf(nationality));
 
             return voiceActorMapper.voiceActorToVoiceActorDtoLazy(voiceActorRepository.save(existVoiceActor));
-        }catch (Exception e){
+        }catch (IOException ioException){
             throw new RuntimeException("Upload anh that bai");
+        }catch (Exception e){
+            throw new RuntimeException("Xoa anh that bai truoc khi thay the bang anh moi!");
         }
     }
 
     @Transactional
-    public VoiceActorDtoLazy deleteVoiceActor(Long id){
+    @PreAuthorize("hasRole('ADMIN')")
+    public void deleteVoiceActor(Long id){
         VoiceActor existVoiceActor = voiceActorRepository
-                .findById(id,NamedEntityGraph.fetching("voice_actor-with-image-anime-and-character"))
+                .findById(id,NamedEntityGraph.fetching("voice_actor-with-image"))
                 .orElseThrow(()-> new RuntimeException("Khong tim thay voice actor id: " + id));
         try{
             Image existImage = existVoiceActor.getImage();
@@ -160,7 +185,7 @@ public class VoiceActorService {
             animeCharacterVoiceActorRepository.detachVoiceActorFromCharacters(existVoiceActor.getId());
 
             voiceActorRepository.delete(existVoiceActor);
-            return voiceActorMapper.voiceActorToVoiceActorDtoLazy(existVoiceActor);
+            voiceActorMapper.voiceActorToVoiceActorDtoLazy(existVoiceActor);
         }catch (Exception e){
             throw new RuntimeException("Xoa anh that bai");
         }

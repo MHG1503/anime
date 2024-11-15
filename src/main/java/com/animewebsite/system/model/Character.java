@@ -14,9 +14,9 @@ import java.util.Set;
 @Entity
 @Table(name = "characters")
 @NamedEntityGraphs({
-        @NamedEntityGraph(name = "character-with-anime-and-voice_actor",
+        @NamedEntityGraph(name = "character-with-image",
                 attributeNodes = {
-                        @NamedAttributeNode("animeCharacterVoiceActors")
+                        @NamedAttributeNode("image")
                 })
 })
 public class Character extends AbstractAuditBase{
@@ -32,7 +32,4 @@ public class Character extends AbstractAuditBase{
 
     @Column(length = 5000)
     private String about;
-
-    @OneToMany(mappedBy = "animeCharacterVoiceActorId.character",fetch = FetchType.LAZY,cascade = CascadeType.ALL)
-    private Set<AnimeCharacterVoiceActor> animeCharacterVoiceActors = new HashSet<>();
 }

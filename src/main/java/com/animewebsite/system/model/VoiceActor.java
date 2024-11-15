@@ -1,5 +1,6 @@
 package com.animewebsite.system.model;
 
+import com.animewebsite.system.model.enums.Nationality;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDate;
@@ -14,9 +15,8 @@ import java.util.Set;
 @Entity
 @Table(name = "voice_actors")
 @NamedEntityGraphs({
-        @NamedEntityGraph(name = "voice_actor-with-image-anime-and-character",
+        @NamedEntityGraph(name = "voice_actor-with-image",
                 attributeNodes = {
-                        @NamedAttributeNode("animeCharacterVoiceActors"),
                         @NamedAttributeNode("image")
                 })
 })
@@ -29,6 +29,7 @@ public class VoiceActor {
 
     private LocalDate dob; // ngay sinh
 
+    @Column(length = 2000)
     private String about; // gioi thieu ve nguoi long tieng
 
     private String url; // url dan den trang MAL
@@ -37,9 +38,7 @@ public class VoiceActor {
     @JoinColumn(name = "image_id")
     private Image image;
 
-    private String nationality;
-
-    @OneToMany(mappedBy = "animeCharacterVoiceActorId.voiceActor",fetch = FetchType.LAZY,cascade = {CascadeType.MERGE,CascadeType.PERSIST,CascadeType.DETACH})
-    private Set<AnimeCharacterVoiceActor> animeCharacterVoiceActors = new HashSet<>();
+    @Enumerated(EnumType.STRING)
+    private Nationality nationality;
 
 }

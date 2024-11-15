@@ -26,14 +26,22 @@ public class User {
     @Column(name = "email",nullable = false,unique = true)
     private String email;
 
-    @Column(name = "image_url")
-    private String imageUrl;
+    @OneToOne
+    @JoinColumn(name = "image_id")
+    private Image image;
 
     @Column(name = "password",nullable = false)
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private String password;
 
+    @Column(name = "verification_code", length = 64,updatable = false)
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    private String verificationCode;
+
     private Boolean enabled;
+
+//    @OneToOne(mappedBy = "user")
+//    private ForgotPassword forgotPassword;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "users_roles",

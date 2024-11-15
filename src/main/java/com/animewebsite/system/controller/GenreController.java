@@ -1,5 +1,6 @@
 package com.animewebsite.system.controller;
 
+import com.animewebsite.system.dto.DataResponse;
 import com.animewebsite.system.dto.req.GenreRequest;
 import com.animewebsite.system.model.Genre;
 import com.animewebsite.system.service.GenreService;
@@ -20,31 +21,50 @@ public class GenreController {
     @GetMapping
     public ResponseEntity<?> getAllGenres(){
         return ResponseEntity.status(HttpStatus.OK)
-                .body(genreService.getAllGenres());
+                .body(
+                        new DataResponse(
+                                HttpStatus.OK.value(),
+                                genreService.getAllGenres()
+                        ));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<?> getGenreById(@PathVariable("id") Long id){
         return ResponseEntity.status(HttpStatus.OK)
-                .body(genreService.getGenreById(id));
+                .body(
+                        new DataResponse(
+                                HttpStatus.OK.value(),
+                                genreService.getGenreById(id)
+                        ));
     }
 
     @PostMapping("/create")
     public ResponseEntity<?> createNewGenre(@RequestBody GenreRequest genreRequest){
         return ResponseEntity.status(HttpStatus.OK)
-                .body(genreService.createGenre(genreRequest));
+                .body(
+                        new DataResponse(
+                                HttpStatus.CREATED.value(),
+                                genreService.createGenre(genreRequest)
+                        ));
     }
 
     @PutMapping("/update/{id}")
     public ResponseEntity<?> updateGenre(@PathVariable("id")Long id,@RequestBody GenreRequest genreRequest){
         return ResponseEntity.status(HttpStatus.OK)
-                .body(genreService.updateGenre(id,genreRequest));
+                .body(
+                        new DataResponse(
+                                HttpStatus.OK.value(),
+                                genreService.updateGenre(id,genreRequest)
+                        ));
     }
 
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<?> deleteGenre(@PathVariable("id")Long id){
         Genre genre = genreService.deleteGenre(id);
         return ResponseEntity.status(HttpStatus.OK)
-                .body("Xoa thanh cong genre id " + genre.getId() + " : " + genre.getName());
+                .body(new DataResponse(
+                                HttpStatus.OK.value(),
+                        "Xoa thanh cong genre id " + genre.getId() + " : " + genre.getName()
+                        ));
     }
 }

@@ -41,14 +41,15 @@ public interface AnimeCharacterVoiceActorMapper {
 
     @Mapping(source = "animeCharacterVoiceActorId.character",target = "characterDtoLazy")
     @Mapping(source = "animeCharacterVoiceActorId.voiceActor",target = "voiceActorDtoLazy")
+    @Mapping(source = "characterRole",target = "role")
     CharacterVoiceActorDtoLazy animeCharacterVoiceActorToCharacterVoiceActorDtoLazy(AnimeCharacterVoiceActor animeCharacterVoiceActor);
 
-    @Mapping(source = "image",target = "image")
-    @Mapping(source = "animeCharacterVoiceActors",target = "animeCharacterDtoLazies")
-    VoiceActorDtoDetail voiceActorToVoiceActorDtoDetail(VoiceActor voiceActor);
-
-    @Mapping(source = "image",target = "image")
-    @Mapping(source = "animeCharacterVoiceActors",target = "animeVoiceActorDtoLazies")
-    CharacterDtoDetail characterToCharacterDtoDetail(Character character);
+//    @Mapping(source = "image",target = "image")
+//    @Mapping(source = "animeCharacterVoiceActors",target = "animeCharacterDtoLazies")
+//    VoiceActorDtoDetail voiceActorToVoiceActorDtoDetail(VoiceActor voiceActor);
+//
+//    @Mapping(source = "image",target = "image")
+//    @Mapping(source = "animeCharacterVoiceActors",target = "animeVoiceActorDtoLazies")
+//    CharacterDtoDetail characterToCharacterDtoDetail(Character character);
 
 }

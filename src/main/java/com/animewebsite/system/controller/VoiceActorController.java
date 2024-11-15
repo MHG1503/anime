@@ -1,5 +1,6 @@
 package com.animewebsite.system.controller;
 
+import com.animewebsite.system.dto.DataResponse;
 import com.animewebsite.system.dto.req.VoiceActorRequest;
 import com.animewebsite.system.service.VoiceActorService;
 import jakarta.validation.Valid;
@@ -21,14 +22,36 @@ public class VoiceActorController {
                                                @RequestParam(value = "pageSize",defaultValue = "10") Integer pageSize){
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(voiceActorService.getAllVoiceActors(pageNum,pageSize));
+                .body(
+                        new DataResponse(
+                                HttpStatus.OK.value(),
+                                voiceActorService.getAllVoiceActors(pageNum,pageSize)
+                        )
+                );
+    }
+
+    @GetMapping("/selections")
+    public ResponseEntity<?> getAllVoiceActorSelections(){
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(
+                        new DataResponse(
+                                HttpStatus.OK.value(),
+                                voiceActorService.getAllVoiceActorSelections()
+                        )
+                );
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<?> getVoiceActorById(@PathVariable("id") Long id){
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(voiceActorService.getVoiceActorById(id));
+                .body(
+                        new DataResponse(
+                                HttpStatus.OK.value(),
+                                voiceActorService.getVoiceActorById(id)
+                        )
+                );
     }
 
     @PostMapping(value = "/create",consumes = { MediaType.APPLICATION_JSON_VALUE, MediaType.MULTIPART_FORM_DATA_VALUE })
@@ -36,7 +59,12 @@ public class VoiceActorController {
                                               @RequestPart(value = "image",required = false)MultipartFile multipartFile){
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(voiceActorService.createVoiceActor(voiceActorRequest,multipartFile));
+                .body(
+                        new DataResponse(
+                                HttpStatus.CREATED.value(),
+                                voiceActorService.createVoiceActor(voiceActorRequest,multipartFile)
+                        )
+                );
     }
 
     @PutMapping(value = "/update/{id}",consumes = { MediaType.APPLICATION_JSON_VALUE, MediaType.MULTIPART_FORM_DATA_VALUE })
@@ -45,13 +73,24 @@ public class VoiceActorController {
                                               @RequestPart(value = "image",required = false)MultipartFile multipartFile){
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(voiceActorService.updateVoiceActor(id,voiceActorRequest,multipartFile));
+                .body(
+                        new DataResponse(
+                                HttpStatus.OK.value(),
+                                voiceActorService.updateVoiceActor(id,voiceActorRequest,multipartFile)
+                        )
+                );
     }
 
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<?> deleteVoiceActor(@PathVariable("id") Long id){
+        voiceActorService.deleteVoiceActor(id);
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(voiceActorService.deleteVoiceActor(id));
+                .body(
+                        new DataResponse(
+                                HttpStatus.OK.value(),
+                                "Xoa voice actor thanh cong!"
+                        )
+                );
     }
 }

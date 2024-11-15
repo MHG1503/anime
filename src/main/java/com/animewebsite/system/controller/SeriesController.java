@@ -1,7 +1,9 @@
 package com.animewebsite.system.controller;
 
+import com.animewebsite.system.dto.DataResponse;
 import com.animewebsite.system.dto.req.SeriesRequest;
 import com.animewebsite.system.dto.res.detail.SeriesDtoDetail;
+import com.animewebsite.system.dto.res.lazy.SeriesDtoLazy;
 import com.animewebsite.system.service.SeriesService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,28 +22,61 @@ public class SeriesController {
                                           @RequestParam(value = "pageSize",required = false,defaultValue = "10") Integer pageSize){
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(seriesService.getAllSeries(pageNum,pageSize));
+                .body(
+                        new DataResponse(
+                                HttpStatus.OK.value(),
+                                seriesService.getAllSeries(pageNum,pageSize)
+                        )
+                );
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<?> getSeriesById(@PathVariable("id")Long id){
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(seriesService.getById(id));
+                .body(
+                        new DataResponse(
+                                HttpStatus.OK.value(),
+                                seriesService.getById(id)
+                        )
+                );
     }
 
     @PostMapping("/create")
     public ResponseEntity<?> createSeries(@RequestBody @Valid SeriesRequest seriesRequest){
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(seriesService.createSeries(seriesRequest));
+                .body(
+                        new DataResponse(
+                                HttpStatus.OK.value(),
+                                seriesService.createSeries(seriesRequest)
+                        )
+                );
     }
 
     @PutMapping("/update/{id}")
     public ResponseEntity<?> updateSeriesInfo(@PathVariable("id") Long id,@RequestBody @Valid SeriesRequest seriesRequest){
         return ResponseEntity
                 .status(HttpStatus.OK)
-                .body(seriesService.updateSeries(id,seriesRequest));
+                .body(
+                        new DataResponse(
+                                HttpStatus.OK.value(),
+                                seriesService.updateSeries(id,seriesRequest)
+                        )
+                );
+    }
+
+    @DeleteMapping("/delete/{id}")
+    public ResponseEntity<?> deleteSeries(@PathVariable("id") Long id){
+        seriesService.deleteSeries(id);
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(
+                        new DataResponse(
+                                HttpStatus.OK.value(),
+                                "Xoa series thanh cong!"
+                        )
+                );
     }
 
     @PostMapping("/{seriesId}/anime/{animeId}")
@@ -50,7 +85,12 @@ public class SeriesController {
             @PathVariable Long animeId,
             @RequestParam boolean isAdd) {
 
-        SeriesDtoDetail seriesDtoDetail = seriesService.manageAnimeInSeries(seriesId, animeId, isAdd);
-        return ResponseEntity.ok(seriesDtoDetail);
+        SeriesDtoLazy seriesDtoDetail = seriesService.manageAnimeInSeries(seriesId, animeId, isAdd);
+        return ResponseEntity.ok(
+                new DataResponse(
+                        HttpStatus.OK.value(),
+                        seriesDtoDetail
+                )
+        );
     }
 }

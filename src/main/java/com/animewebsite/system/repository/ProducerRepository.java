@@ -12,7 +12,4 @@ import java.util.Optional;
 public interface ProducerRepository extends JpaRepository<Producer,Long> {
     Optional<Producer> findByName(String name);
 
-    Optional<Producer> findById(Long id, EntityGraph entityGraph);
-
-    Page<Producer> findAll(Pageable pageable,EntityGraph entityGraph);
 }

@@ -7,7 +7,9 @@ import lombok.Setter;
 @Getter
 @Setter
 public class AlternativeTitleDtoLazy {
-    private TitleType titleType;
+    private Long id;
 
-    private String title;
+    private TitleType language;
+
+    private String alternativeName;
 }

@@ -27,27 +27,30 @@ public class SeriesService {
     private final SeriesMapper seriesMapper;
     private final AnimeRepository animeRepository;
 
-    public PaginatedResponse<SeriesDtoLazy> getAllSeries(int pageNum, int pageSize){
-        Pageable pageable = PageRequest.of(pageNum-1,pageSize);
-        Page<Series> series = seriesRepository.findAll(pageable);
+    public Object getAllSeries(int pageNum, int pageSize){
 
-        return new PaginatedResponse<>(
-                series.getContent().stream().map(seriesMapper::seriesToSeriesDtoLazy).toList(),
-                series.getTotalPages(),
-                series.getNumber()+1,
-                series.getTotalElements()
-        );
+        if(pageNum != 0 && pageSize != 0){
+            Pageable pageable = PageRequest.of(pageNum-1,pageSize);
+            Page<Series> series = seriesRepository.findAll(pageable);
+            return new PaginatedResponse<>(
+                    series.getContent().stream().map(seriesMapper::seriesToSeriesDtoLazy).toList(),
+                    series.getTotalPages(),
+                    series.getNumber()+1,
+                    series.getTotalElements()
+            );
+        }
+        return seriesRepository.findAll().stream().map(seriesMapper::seriesToSeriesDtoLazy).toList();
     }
 
-    public SeriesDtoDetail getByName(String title){
-        return seriesMapper.seriesToSeriesDtoDetail(seriesRepository
-                .findByTitle(title,NamedEntityGraph.fetching("series-anime"))
-                .orElseThrow(()->new RuntimeException("Khong tim thay series")));
-    }
+//    public SeriesDtoDetail getByName(String title){
+//        return seriesMapper.seriesToSeriesDtoDetail(seriesRepository
+//                .findByTitle(title,NamedEntityGraph.fetching("series-anime"))
+//                .orElseThrow(()->new RuntimeException("Khong tim thay series")));
+//    }
 
-    public SeriesDtoDetail getById(Long id){
-        return seriesMapper.seriesToSeriesDtoDetail(seriesRepository
-                .findById(id,NamedEntityGraph.fetching("series-anime"))
+    public SeriesDtoLazy getById(Long id){
+        return seriesMapper.seriesToSeriesDtoLazy(seriesRepository
+                .findById(id)
                 .orElseThrow(()->new RuntimeException("Khong tim thay series")));
     }
 
@@ -75,38 +78,40 @@ public class SeriesService {
 
     @Transactional
     public void deleteSeries(Long id){
-        Series series = seriesRepository.findById(id).orElseThrow(()->new RuntimeException("Khong tim thay series"));
+        Series series = seriesRepository
+                .findById(id)
+                .orElseThrow(()->new RuntimeException("Khong tim thay series"));
 
-        seriesRepository.delete(series);
+        seriesRepository.deleteById(id);
     }
 
     @Transactional
-    public SeriesDtoDetail manageAnimeInSeries(Long seriesId, Long animeId, boolean isAdd){
+    public SeriesDtoLazy manageAnimeInSeries(Long seriesId, Long animeId, boolean isAdd){
         Series series = seriesRepository
                 .findById(seriesId,NamedEntityGraph.fetching("series-anime"))
                 .orElseThrow(()->new RuntimeException("Khong tim thay series"));
 
+        Anime anime = animeRepository
+                .findById(animeId)
+                .orElseThrow(() -> new RuntimeException("Khong tim thay anime"));
+
         Optional<Anime> animeOptional = series
                 .getAnimeSet()
                 .stream()
-                .filter((anime -> anime.getId().equals(animeId)))
+                .filter((a -> a.getId().equals(animeId)))
                 .findFirst();
         if(isAdd){
             if (animeOptional.isEmpty()) {
-                Anime anime = animeRepository
-                        .findById(animeId)
-                        .orElseThrow(() -> new RuntimeException("Khong tim thay anime"));
-
                 if (series.addAnimeToSeries(anime)) {
-                    return seriesMapper.seriesToSeriesDtoDetail(seriesRepository.save(series));
+                    return seriesMapper.seriesToSeriesDtoLazy(seriesRepository.save(series));
                 }
                 throw new RuntimeException("Them anime vao series that bai!");
             }
             throw new RuntimeException("Anime da ton tai trong series!");
         } else {
             if (animeOptional.isPresent()) {
-                if (series.removeAnimeFromSeries(animeId)) {
-                    return seriesMapper.seriesToSeriesDtoDetail(seriesRepository.save(series));
+                if (series.removeAnimeFromSeries(animeOptional.get())) {
+                    return seriesMapper.seriesToSeriesDtoLazy(seriesRepository.save(series));
                 }
                 throw new RuntimeException("xoa anime ra khoi series that bai!");
             }
