@@ -2,7 +2,10 @@ package com.animewebsite.system.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
+import org.aspectj.weaver.ast.Not;
 
 import java.util.Objects;
 
@@ -23,23 +26,25 @@ public class Episode extends AbstractAuditBase{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
+    @NotBlank
     private String title;
-    private String episode;
+    @NotNull
+    private Integer episode;
 
     @Column(length = 2000)
+    @NotBlank
     private String videoUrl;
 
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "image_id")
     private Image image;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY,cascade = {CascadeType.MERGE,CascadeType.PERSIST})
     @JoinColumn(name = "anime_id")
     @JsonIgnore
     private Anime anime;
 
-    public Episode(String title, String episode) {
+    public Episode(String title, Integer episode) {
         this.title = title;
         this.episode = episode;
     }

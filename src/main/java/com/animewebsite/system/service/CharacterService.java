@@ -4,11 +4,16 @@ import com.animewebsite.system.convert.AnimeCharacterVoiceActorMapper;
 import com.animewebsite.system.convert.CharacterMapper;
 import com.animewebsite.system.dto.req.CharacterRequest;
 import com.animewebsite.system.dto.res.PaginatedResponse;
+import com.animewebsite.system.dto.res.lazy.CharacterDetailsDTO;
 import com.animewebsite.system.dto.res.lazy.CharacterDtoLazy;
 import com.animewebsite.system.model.Character;
 import com.animewebsite.system.model.Image;
+import com.animewebsite.system.repository.AnimeCharacterVoiceActorRepository;
 import com.animewebsite.system.repository.CharacterRepository;
 import com.cosium.spring.data.jpa.entity.graph.domain2.NamedEntityGraph;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -29,8 +34,34 @@ import java.util.Optional;
 public class CharacterService {
     private final CharacterRepository characterRepository;
     private final CloudinaryService cloudinaryService;
-    private final AnimeCharacterVoiceActorMapper animeCharacterVoiceActorMapper;
     private final CharacterMapper characterMapper;
+    private final ObjectMapper objectMapper;
+
+
+    public Object getCharacterDetails(Long characterId) {
+        Object result = characterRepository
+                .findCharacterWithAnimeAndVoiceActors(characterId)
+                .orElseThrow(()->new RuntimeException("Khong tim thay"));
+
+        try {
+            Object[] row = (Object[]) result;
+            Long id = (Long) row[0];
+            String name = (String) row[1];
+            String about = (String) row[2];
+            String imageUrl = (String) row[3];
+            String animeListJson = (String) row[4];
+            String voiceActorListJson = (String) row[5];
+
+            List<Map<String, Object>> animeList = objectMapper.readValue(
+                    animeListJson, new TypeReference<List<Map<String, Object>>>() {});
+            List<Map<String, Object>> voiceActorList = objectMapper.readValue(
+                    voiceActorListJson, new TypeReference<List<Map<String, Object>>>() {});
+
+            return new CharacterDetailsDTO(id, name,about, imageUrl,animeList, voiceActorList);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Error parsing JSON result", e);
+        }
+    }
 
     public PaginatedResponse<CharacterDtoLazy> getAllCharacters(Integer pageNum, Integer pageSize){
         Pageable pageable = PageRequest.of(pageNum - 1,pageSize);
@@ -54,11 +85,12 @@ public class CharacterService {
 
     public CharacterDtoLazy getCharacterById(Long id){
         return characterMapper.characterToCharacterDtoLazy(characterRepository
-                .findById(id)
+                .findById(id,NamedEntityGraph.fetching("character-with-image"))
                 .orElseThrow(()->new RuntimeException("Khong tim thay character!")));
     }
 
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
     public CharacterDtoLazy createCharacter(CharacterRequest characterRequest,
                                             MultipartFile multipartFile){
         String nameRequest = characterRequest.getName();
@@ -93,6 +125,7 @@ public class CharacterService {
     }
 
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
     public CharacterDtoLazy updateCharacter(Long id,
                                             CharacterRequest characterRequest,
                                             MultipartFile multipartFile){
@@ -134,6 +167,7 @@ public class CharacterService {
     }
 
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
     public CharacterDtoLazy deleteCharacterById(Long id){
         Character character = characterRepository
                 .findById(id)

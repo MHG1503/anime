@@ -25,6 +25,8 @@ import org.springframework.stereotype.Service;
 import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
 
 @Service
 @RequiredArgsConstructor
@@ -34,12 +36,10 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final EmailService emailService;
-    private final CloudinaryService cloudinaryService;
 
     @Transactional
     public String register(RegisterRequest request, String siteUrl) throws MessagingException, UnsupportedEncodingException {
         Role role = roleRepository.findByName("USER").orElseThrow(()->new RuntimeException("Not found role"));
-
         Optional<User> userOptional = userRepository.findByEmail(request.getEmail());
 
         User user = null;

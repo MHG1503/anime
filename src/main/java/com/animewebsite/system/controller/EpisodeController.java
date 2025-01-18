@@ -26,7 +26,7 @@ public class EpisodeController {
                 .status(HttpStatus.CREATED)
                 .body(
                         new DataResponse(
-                                HttpStatus.OK.value(),
+                                HttpStatus.CREATED.value(),
                                 episodeService.createAndAddEpisode(request,file,imageFile)
                         )
                 );
@@ -48,8 +48,8 @@ public class EpisodeController {
     }
 
     @DeleteMapping("/delete/{id}")
-    public ResponseEntity<?> deleteEpisode(@PathVariable("id") Long id){
-        episodeService.deleteEpisode(id);
+    public ResponseEntity<?> deleteEpisode(@PathVariable("id") Long id,@RequestParam("animeId")Long animeId){
+        episodeService.deleteEpisode(id,animeId);
 
         return ResponseEntity
                 .status(HttpStatus.OK)

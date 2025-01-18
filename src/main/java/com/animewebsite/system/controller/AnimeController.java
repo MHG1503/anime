@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -38,6 +39,75 @@ public class AnimeController {
                         )
                 );
     }
+
+    @GetMapping("/genres/{genreName}")
+    public ResponseEntity<?> getAllAnimeByGenre(@RequestParam(value = "pageNum",required = false,defaultValue = "1") Integer pageNum,
+                                                @RequestParam(value = "pageSize",required = false,defaultValue = "10") Integer pageSize,
+                                                @PathVariable(value = "genreName") String genreName) {
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(
+                        new DataResponse(
+                                HttpStatus.OK.value(),
+                                animeService.getAllAnimeByGenre(pageNum,pageSize,genreName)
+                        )
+                );
+    }
+
+    @GetMapping("/recommend")
+    public ResponseEntity<?> getAllRecommendAnime(@RequestParam(value = "pageNum",required = false,defaultValue = "1") Integer pageNum,
+                                                  @RequestParam(value = "pageSize",required = false,defaultValue = "10") Integer pageSize,
+                                                  @RequestParam(value = "genres") List<String> genres) {
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(
+                        new DataResponse(
+                                HttpStatus.OK.value(),
+                                animeService.getAllRecommendAnime(pageNum,pageSize,genres)
+                        )
+                );
+    }
+
+    @GetMapping("/{id}/videos")
+    public ResponseEntity<?> getAllAnimeVideos(@PathVariable("id") Long id,
+                                               @RequestParam(value = "pageNum",required = false,defaultValue = "1") Integer pageNum,
+                                               @RequestParam(value = "pageSize",required = false,defaultValue = "10") Integer pageSize) {
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(
+                        new DataResponse(
+                                HttpStatus.OK.value(),
+                                animeService.getAnimeVideos(id,pageNum,pageSize)
+                        )
+                );
+    }
+
+    @GetMapping("/{id}/episodes")
+    public ResponseEntity<?> getAllAnimeEpisode(@PathVariable("id") Long id,
+                                               @RequestParam(value = "pageNum",required = false,defaultValue = "1") Integer pageNum,
+                                               @RequestParam(value = "pageSize",required = false,defaultValue = "10") Integer pageSize) {
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(
+                        new DataResponse(
+                                HttpStatus.OK.value(),
+                                animeService.getAnimeEpisodes(id,pageNum,pageSize)
+                        )
+                );
+    }
+
+    @GetMapping("/{id}/episodes/{episode_id}")
+    public ResponseEntity<?> getAnimeEpisodeById(@PathVariable("id") Long id, @PathVariable("episode_id") Long episodeId){
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(
+                        new DataResponse(
+                                HttpStatus.OK.value(),
+                                animeService.getAnimeEpisodeById(id,episodeId)
+                        )
+                );
+    }
+
 
     @GetMapping("/series/{id}")
     public ResponseEntity<?> getAllAnimeBySeriesId(@RequestParam(value = "pageNum",required = false,defaultValue = "1") Integer pageNum,
@@ -80,7 +150,7 @@ public class AnimeController {
     }
 
     @PutMapping(value = "/update/{id}",consumes = {MediaType.MULTIPART_FORM_DATA_VALUE,MediaType.APPLICATION_JSON_VALUE})
-    public ResponseEntity<?> createAnime(@PathVariable("id") Long id,
+    public ResponseEntity<?> updateAnime(@PathVariable("id") Long id,
                                          @RequestPart(value = "image",required = false)MultipartFile file,
                                          @RequestPart("animeData") @Valid UpdateAnimeRequest updateAnimeRequest) throws IOException {
         return ResponseEntity

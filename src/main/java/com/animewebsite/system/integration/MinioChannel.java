@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
@@ -90,6 +91,48 @@ public class MinioChannel {
     }
 
     @SneakyThrows
+    public void delete(String bucket,String folder,List<String> filesName){
+
+
+        for (var objectName : filesName){
+            try {
+                if(objectName.trim().isEmpty()){
+                    continue;
+                }
+                if(!objectName.contains(folder)){
+                    objectName = folder + "/" + objectName;
+                }
+                minioClient.removeObject(
+                        RemoveObjectArgs.builder()
+                                .bucket(bucket)
+                                .object(objectName)
+                                .build()
+                );
+            }catch(Exception e){
+                System.out.println(e.getMessage());
+            }
+        }
+    }
+
+    @SneakyThrows
+    public List<String> getExistFileNameInFolder(String bucket,String folder){
+        Iterable<Result<Item>> items = minioClient.listObjects(
+                ListObjectsArgs.builder()
+                        .bucket(bucket)
+                        .prefix(folder)
+                        .recursive(true)
+                        .build()
+        );
+
+        List<String> existedObjects = new ArrayList<>();
+        for (Result<Item> item : items) {
+            existedObjects.add(item.get().objectName());
+        }
+
+        return existedObjects;
+    }
+
+    @SneakyThrows
     public String upload(@NotBlank final String bucket, @NonNull final String folder,@NonNull final MultipartFile file){
 
         createBucket(bucket);
@@ -116,13 +159,15 @@ public class MinioChannel {
             log.error("Error saving file \n {} ", ex.getMessage());
             throw new RuntimeException("Khong the upload file");
         }
-        return minioClient.getPresignedObjectUrl(
+        String url = minioClient.getPresignedObjectUrl(
                 io.minio.GetPresignedObjectUrlArgs.builder()
                         .method(io.minio.http.Method.GET)
                         .bucket(bucket)
                         .object(objectName)
                         .build()
         );
+
+        return url.substring(0, url.indexOf('?'));
     }
 
     @SneakyThrows
@@ -145,10 +190,15 @@ public class MinioChannel {
         }
     }
 
-    public void copyAndDelete(String bucketName, String tempFolder, String finalFolder) {
+    public void copyAndDelete(String bucket, String tempFolder, String finalFolder) {
         try {
+
             Iterable<Result<Item>> results = minioClient.listObjects(
-                    ListObjectsArgs.builder().bucket(bucketName).prefix(tempFolder).build()
+                    ListObjectsArgs.builder()
+                            .bucket(bucket)
+                            .prefix(tempFolder)
+                            .recursive(true)
+                            .build()
             );
 
             for (Result<Item> result : results) {
@@ -159,14 +209,18 @@ public class MinioChannel {
                 // Copy file
                 minioClient.copyObject(
                         CopyObjectArgs.builder()
-                                .bucket(bucketName)
+                                .bucket(bucket)
                                 .object(finalFileName)
-                                .source(CopySource.builder().bucket(bucketName).object(tempFileName).build())
+                                .source(CopySource
+                                        .builder()
+                                        .bucket(bucket)
+                                        .object(tempFileName)
+                                        .build())
                                 .build()
                 );
 
                 // Xóa file tạm
-                delete(bucketName, tempFolder);
+                delete(bucket, tempFolder);
             }
         } catch (Exception e) {
             throw new RuntimeException("Lỗi trong quá trình đổi tên và xóa file: " + e.getMessage());

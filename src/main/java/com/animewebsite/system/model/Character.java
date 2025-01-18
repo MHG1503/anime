@@ -1,5 +1,6 @@
 package com.animewebsite.system.model;
 
+import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -24,6 +25,7 @@ public class Character extends AbstractAuditBase{
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Nullable
     private String name;
 
     @OneToOne(cascade = CascadeType.ALL)
@@ -31,5 +33,6 @@ public class Character extends AbstractAuditBase{
     private Image image;
 
     @Column(length = 5000)
+    @Nullable
     private String about;
 }

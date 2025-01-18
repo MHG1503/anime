@@ -7,18 +7,16 @@ import com.animewebsite.system.integration.MinioChannel;
 import com.animewebsite.system.model.Anime;
 import com.animewebsite.system.model.Episode;
 import com.animewebsite.system.model.Image;
-import com.animewebsite.system.model.Video;
 import com.animewebsite.system.repository.AnimeRepository;
 import com.animewebsite.system.repository.EpisodeRepository;
-import com.animewebsite.system.repository.VideoRepository;
 import com.cosium.spring.data.jpa.entity.graph.domain2.NamedEntityGraph;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -26,7 +24,6 @@ public class EpisodeService {
     private final EpisodeRepository episodeRepository;
     private final AnimeRepository animeRepository;
     private final MinioChannel minioChannel;
-    private final VideoRepository videoRepository;
     private final EpisodeMapper episodeMapper;
     private final String BUCKET = "anime";
 
@@ -40,23 +37,18 @@ public class EpisodeService {
                 .findById(animeId)
                 .orElseThrow(()-> new RuntimeException("Khong tim thay anime id: " + animeId));
 
-        Video video = videoRepository
-                .findByAnimeId(anime.getId(), NamedEntityGraph.fetching("video-with-episodes"))
-                .orElse(
-                        Video
-                                .builder()
-                                .id(null)
-                                .anime(anime)
-                                .episodes(new ArrayList<>())
-                                .build()
-                );
-        if(video.getId() == null){
-            video = videoRepository.save(video);
-        }
+        int posDot = request.getTitle().lastIndexOf(".");
 
-        String titleRequest = request.getTitle();
-        String episodeRequest =request.getEpisode();
+        String titleRequest = request.getTitle().substring(0,posDot);
+        Integer episodeRequest =request.getEpisode();
         String folder = anime.getName() + "/" + "Episode-" + episodeRequest;
+
+        Optional<Episode> episode = episodeRepository
+                .findByTitleAndEpisode(titleRequest,episodeRequest);
+
+        if(episode.isPresent()){
+            throw new RuntimeException("Da ton tai episode " + episode.get().getEpisode()+ " | title: " + episode.get().getTitle());
+        }
 
         try{
             Image image = null;
@@ -65,92 +57,104 @@ public class EpisodeService {
                         .builder()
                         .publicId(null)
                         .imageUrl(minioChannel.upload(BUCKET, folder, imageFile))
+                        .altTitle(imageFile.getOriginalFilename())
                         .build();
             }
 
+            anime.setEpisodes(anime.getEpisodes() + 1);
             Episode episodeVideo = Episode
                     .builder()
                     .title(titleRequest)
                     .episode(episodeRequest)
                     .anime(anime)
                     .image(image)
-                    .videoUrl(file.isEmpty() ? null : minioChannel.upload(BUCKET,folder,file))
+                    .videoUrl((file != null && !file.isEmpty()) ? minioChannel.upload(BUCKET,folder,file) : null)
                     .build();
 
-            if(video.getEpisodes().contains(episodeVideo)){
-                throw new RuntimeException("Da ton tai episode nay roi!");
-            }
-
-            video.getEpisodes().add(episodeVideo);
-            Video saveVideo = videoRepository.save(video);
-
-            return episodeMapper.episodeToEpisodeDtoLazy(saveVideo.getEpisodes()
-                    .stream()
-                    .filter(e -> e.getTitle().equals(request.getTitle()))
-                    .findFirst()
-                    .orElseThrow(() -> new RuntimeException("Them promotion video that bai!")));
+            return episodeMapper.episodeToEpisodeDtoLazy(episodeRepository.save(episodeVideo));
         }catch (Exception e){
             minioChannel.delete(BUCKET, folder);
             throw new RuntimeException("Them moi that bai!");
         }
     }
 
-    //TODO xu ly phan file va imageFile neu nhu updated that bai
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
     public EpisodeDtoLazy updateEpisode(Long id, EpisodeRequest request, MultipartFile file, MultipartFile imageFile){
+        List<String> rasterImageFormats = List.of("jpg", "jpeg", "png", "gif", "bmp", "tif", "tiff", "webp");
+
         Long animeId = request.getAnimeId();
         String titleRequest = request.getTitle();
-        String episodeRequest =request.getEpisode();
+        Integer episodeRequest =request.getEpisode();
+        String newFileName = "";
+        String newImageUrl = "";
 
-        Anime anime = animeRepository
-                .findById(animeId)
-                .orElseThrow(()-> new RuntimeException("Khong tim thay anime id: " + animeId));
-
-        Video video = videoRepository
-                .findByAnimeId(animeId, NamedEntityGraph.fetching("video-with-episodes"))
-                .orElseThrow(()-> new RuntimeException("Khong tim thay videos tuong ung"));
 
         Episode episode = episodeRepository
-                .findByIdAndAnimeId(id,anime.getId())
+                .findByIdAndAnimeIdAndEpisode(id,animeId,request.getEpisode(),NamedEntityGraph.fetching("episode-with-anime"))
                 .orElseThrow(()-> new RuntimeException("Khong tim thay episode : " + id));
 
-        String newFileUrl;
-        String newImageUrl;
-        String folder = anime.getName() + "/" + "Episode-" + episodeRequest;
-        String tempFolder = anime.getName() + "/" + "Episode-" + episodeRequest + "/temp";
+        String folder = episode.getAnime().getName() + "/" + "Episode-" + episodeRequest;
 
+        // before update
+        List<String> getExistFileInFolder = minioChannel.getExistFileNameInFolder(BUCKET, folder);
         try {
             if(file != null && !file.isEmpty()){
-                newFileUrl = minioChannel.upload(BUCKET,tempFolder,file);
-                episode.setVideoUrl(newFileUrl);
+                if(!minioChannel.doesFileExist(BUCKET, folder + "/" + file.getOriginalFilename())){
+                    episode.setVideoUrl(minioChannel.upload(BUCKET,folder,file));
+                    newFileName = file.getOriginalFilename();
+                }else{
+                    getExistFileInFolder.removeIf(name -> name.contains(folder + "/" + episode.getTitle()));
+                }
             }
+
 
             episode.setTitle(titleRequest);
             episode.setEpisode(episodeRequest);
 
             if(imageFile != null && !imageFile.isEmpty()){
-                newImageUrl = minioChannel.upload(BUCKET, tempFolder , imageFile);
-                episode
-                        .getImage()
-                        .setImageUrl(newImageUrl);
+                if(!minioChannel.doesFileExist(BUCKET, folder + "/" + imageFile.getOriginalFilename())){
+                    if(episode.getImage() != null){
+                        episode
+                                .getImage()
+                                .setImageUrl(minioChannel.upload(BUCKET, folder , imageFile));
+
+                        episode
+                                .getImage()
+                                .setAltTitle(imageFile.getOriginalFilename());
+                    }else{
+                        episode.setImage(Image
+                                .builder()
+                                        .imageUrl(minioChannel.upload(BUCKET, folder , imageFile))
+                                        .altTitle(imageFile.getOriginalFilename())
+                                .build());
+                    }
+
+                    newImageUrl = imageFile.getOriginalFilename();
+                }else {
+                    getExistFileInFolder.removeIf(name -> rasterImageFormats.contains(name.substring(name.lastIndexOf(".") + 1).toLowerCase()));
+                }
             }
 
             Episode saveEpisode = episodeRepository.save(episode);
 
-//            minioChannel.copyAndDelete();
+            minioChannel.delete(BUCKET, folder, getExistFileInFolder);
+
             return episodeMapper.episodeToEpisodeDtoLazy(saveEpisode);
+
         }catch (Exception e){
-            minioChannel.delete(BUCKET, tempFolder);
+            minioChannel.delete(BUCKET, folder,
+                    List.of(newFileName != null ? newFileName : "",newImageUrl != null ? newImageUrl : ""));
+
             throw new RuntimeException("Cap nhat episode that bai");
         }
     }
 
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
-    public void deleteEpisode(Long id){
+    public void deleteEpisode(Long id, Long animeId){
         Episode episode = episodeRepository
-                .findById(id,NamedEntityGraph.fetching("episode-with-anime"))
+                .findByIdAndAnimeId(id,animeId,NamedEntityGraph.fetching("episode-with-anime"))
                 .orElseThrow(()->new RuntimeException("Khong tim thay episode id" + id));
 
         String folder = episode.getAnime().getName() + "/" + "Episode-" + episode.getEpisode();

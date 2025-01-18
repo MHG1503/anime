@@ -1,5 +1,6 @@
 package com.animewebsite.system.model;
 
+import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -27,6 +28,7 @@ public class Genre extends AbstractAuditBase{
     private String name;
 
     @Column(length = 1000)
+    @Nullable
     private String description;
 
     @ManyToMany(fetch = FetchType.LAZY,mappedBy = "genres")

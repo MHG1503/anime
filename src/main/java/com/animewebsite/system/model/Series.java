@@ -16,7 +16,7 @@ import java.util.Set;
                 @NamedAttributeNode("animeSet")
         })
 })
-public class Series {
+public class Series extends AbstractAuditBase{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

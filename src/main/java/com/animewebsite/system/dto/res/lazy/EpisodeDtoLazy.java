@@ -10,7 +10,7 @@ import lombok.Setter;
 public class EpisodeDtoLazy {
     private Long id;
     private String title;
-    private String episode;
+    private Integer episode;
     private String videoUrl;
     private ImageDtoLazy image;
 

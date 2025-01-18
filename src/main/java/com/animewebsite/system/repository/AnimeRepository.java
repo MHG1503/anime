@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -21,4 +22,7 @@ public interface AnimeRepository extends JpaRepository<Anime,Long> {
     Page<Anime> findBySeriesIdIsNull(Pageable pageable);
 
     Optional<Anime> findById(Long id, EntityGraph entityGraph);
+
+    @Query("SELECT a FROM Anime a JOIN a.genres g WHERE g.name IN :names")
+    Page<Anime> findByGenresName(@Param("names") List<String> names, Pageable pageable);
 }

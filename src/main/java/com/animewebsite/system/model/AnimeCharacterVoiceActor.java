@@ -15,20 +15,16 @@ import lombok.*;
 @NamedEntityGraphs({
         @NamedEntityGraph(name = "anime-character-voice_actor",
         attributeNodes = {
-                @NamedAttributeNode("animeCharacterVoiceActorId"),
+                @NamedAttributeNode(value = "animeCharacterVoiceActorId",subgraph = "animeCharacterVoiceActorId"),
         },
         subgraphs = {
                 @NamedSubgraph(
-                        name = "character",
-                        attributeNodes =@NamedAttributeNode("character")
-                ),
-                @NamedSubgraph(
-                        name = "anime",
-                        attributeNodes =@NamedAttributeNode("anime")
-                ),
-                @NamedSubgraph(
-                        name = "voiceActor",
-                        attributeNodes =@NamedAttributeNode("voiceActor")
+                        name = "animeCharacterVoiceActorId",
+                        attributeNodes = {
+                                @NamedAttributeNode(value = "character"),
+                                @NamedAttributeNode(value = "anime"),
+                                @NamedAttributeNode(value = "voiceActor")
+                        }
                 )
         }),
 

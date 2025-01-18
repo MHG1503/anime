@@ -14,7 +14,7 @@ import java.util.Set;
 @AllArgsConstructor
 @Entity
 @Table(name = "producers")
-public class Producer{
+public class Producer extends AbstractAuditBase{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

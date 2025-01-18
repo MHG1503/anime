@@ -19,7 +19,7 @@ import java.util.Comparator;
 @AllArgsConstructor
 public class AnimeCharacterVoiceActorId implements Serializable {
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY,cascade = {CascadeType.PERSIST,CascadeType.MERGE,CascadeType.DETACH,CascadeType.REFRESH})
     @JoinColumn(name = "character_id")
     private Character character;
 
@@ -27,7 +27,7 @@ public class AnimeCharacterVoiceActorId implements Serializable {
     @JoinColumn(name = "anime_id")
     private Anime anime;
 
-    @ManyToOne(fetch = FetchType.LAZY, cascade = {CascadeType.MERGE, CascadeType.PERSIST,CascadeType.DETACH})
+    @ManyToOne(fetch = FetchType.LAZY, cascade = {CascadeType.MERGE, CascadeType.PERSIST,CascadeType.DETACH,CascadeType.REFRESH})
     @JoinColumn(name = "voice_actor_id")
     private VoiceActor voiceActor;
 

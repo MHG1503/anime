@@ -42,6 +42,18 @@ public class VoiceActorController {
                 );
     }
 
+    @GetMapping("/full-info/{id}")
+    public ResponseEntity<?> getVoiceActorDetails(@PathVariable("id") Long id){
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(
+                        new DataResponse(
+                                HttpStatus.OK.value(),
+                                voiceActorService.findByAnimeCharacterVoiceActorIdVoiceActorId(id)
+                        )
+                );
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<?> getVoiceActorById(@PathVariable("id") Long id){
         return ResponseEntity

@@ -3,9 +3,13 @@ package com.animewebsite.system.model;
 import com.animewebsite.system.model.enums.Season;
 import com.animewebsite.system.model.enums.Status;
 import com.animewebsite.system.model.enums.Type;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.data.annotation.CreatedDate;
 
+import java.time.LocalDateTime;
 import java.util.Set;
 
 @Getter
@@ -38,6 +42,7 @@ public class Anime extends AbstractAuditBase{
     private Set<AlternativeTitle> alternativeTitles; // Ten dong nghia
 
     @Column(length = 2000)
+    @Nullable
     private String description;
 
     @Enumerated(EnumType.STRING)
@@ -53,13 +58,15 @@ public class Anime extends AbstractAuditBase{
 
     private Double malScore; // diem dua tren trang web MyAnimeList
 
+    @Enumerated(EnumType.STRING)
     private Season season;
     
     private int year;
 
+    @Nullable
     private int episodes;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "series_id")
     private Series series;
 
@@ -69,7 +76,7 @@ public class Anime extends AbstractAuditBase{
             inverseJoinColumns = @JoinColumn(name = "genre_id"))
     private Set<Genre> genres;
 
-    @OneToOne(cascade = CascadeType.ALL)
+    @OneToOne(cascade = CascadeType.ALL,fetch = FetchType.LAZY)
     @JoinColumn(name = "image_id")
     private Image image;
 

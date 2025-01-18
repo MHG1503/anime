@@ -24,4 +24,8 @@ public class AnimeDtoLazy {
     private int episodes;
 
     private ImageDtoLazy imageDtoLazy;
+
+    private String description;
+
+    private Double duration;
 }

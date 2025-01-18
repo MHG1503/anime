@@ -12,16 +12,21 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
 public class GenreService {
     private final GenreRepository genreRepository;
     private final GenreMapper genreMapper;
+
+    public Set<GenreDtoLazy> getAllGenres(){
+        return new LinkedHashSet<>(genreRepository
+                .findAll()
+                .stream()
+                .map(genreMapper::genreToGenreDtoLazy)
+                .sorted(Comparator.comparing(GenreDtoLazy::getName)).toList());
+    }
 
     @PreAuthorize("hasRole('ADMIN')")
     public GenreDtoDetail getGenreById(Long id){
@@ -30,9 +35,6 @@ public class GenreService {
                 .orElseThrow(()->new RuntimeException("Khong tim thay the loai (genre)")));
     }
 
-    public Set<GenreDtoLazy> getAllGenres(){
-        return new HashSet<>(genreRepository.findAll().stream().map(genreMapper::genreToGenreDtoLazy).sorted(Comparator.comparing(GenreDtoLazy::getId)).toList());
-    }
 
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")

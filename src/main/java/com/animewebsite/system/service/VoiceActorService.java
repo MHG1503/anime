@@ -5,6 +5,7 @@ import com.animewebsite.system.convert.VoiceActorMapper;
 import com.animewebsite.system.dto.req.VoiceActorRequest;
 import com.animewebsite.system.dto.res.PaginatedResponse;
 import com.animewebsite.system.dto.res.lazy.VoiceActorDtoLazy;
+import com.animewebsite.system.dto.res.view.VoiceActorWithAnimeAndCharacterDtoView;
 import com.animewebsite.system.model.Image;
 import com.animewebsite.system.model.VoiceActor;
 import com.animewebsite.system.model.enums.Nationality;
@@ -16,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -34,6 +36,18 @@ public class VoiceActorService {
     private final CloudinaryService cloudinaryService;
     private final AnimeCharacterVoiceActorRepository animeCharacterVoiceActorRepository;
     private final AnimeCharacterVoiceActorMapper animeCharacterVoiceActorMapper;
+
+
+    public Object findByAnimeCharacterVoiceActorIdVoiceActorId(Long id){
+        var result = animeCharacterVoiceActorRepository
+                .findByAnimeCharacterVoiceActorIdVoiceActorId(id,NamedEntityGraph.fetching("anime-character-voice_actor"));
+        var voiceActor = result.get(0).getAnimeCharacterVoiceActorId().getVoiceActor();
+        var voiceActorDto = voiceActorMapper.voiceActorToVoiceActorDtoLazy(voiceActor);
+        var animeCharacterDtos = result.stream()
+                .map(animeCharacterVoiceActorMapper::animeCharacterVoiceActorToAnimeCharacterDtoLazy)
+                .toList();
+        return new VoiceActorWithAnimeAndCharacterDtoView(voiceActorDto, animeCharacterDtos);
+    }
 
     public PaginatedResponse<VoiceActorDtoLazy> getAllVoiceActors(Integer pageNum, Integer pageSize){
         Pageable pageable = PageRequest.of(pageNum-1,pageSize);

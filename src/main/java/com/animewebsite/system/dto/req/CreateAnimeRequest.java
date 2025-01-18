@@ -4,6 +4,7 @@ import com.animewebsite.system.model.*;
 import com.animewebsite.system.model.enums.Season;
 import com.animewebsite.system.model.enums.Status;
 import com.animewebsite.system.model.enums.Type;
+import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.Getter;
@@ -21,6 +22,7 @@ public class CreateAnimeRequest {
     private Set<AlternativeTitleRequest> alternativeTitles; // Ten dong nghia
     @NotBlank
     private String description;
+    @Nullable
     private Long seriesId;
     private Status status;
     private Type type;

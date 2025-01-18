@@ -20,7 +20,7 @@ import java.util.Set;
                         @NamedAttributeNode("image")
                 })
 })
-public class VoiceActor {
+public class VoiceActor extends AbstractAuditBase{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

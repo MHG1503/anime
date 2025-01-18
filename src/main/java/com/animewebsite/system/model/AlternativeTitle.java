@@ -12,7 +12,7 @@ import lombok.*;
 @Builder
 @Entity
 @Table(name = "alternative_titles")
-public class AlternativeTitle {
+public class AlternativeTitle extends AbstractAuditBase{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

@@ -1,13 +1,16 @@
 package com.animewebsite.system.service;
 
 import com.animewebsite.system.convert.AnimeMapper;
+import com.animewebsite.system.convert.EpisodeMapper;
 import com.animewebsite.system.dto.req.AlternativeTitleRequest;
 import com.animewebsite.system.dto.req.CreateAnimeRequest;
 import com.animewebsite.system.dto.req.UpdateAnimeRequest;
+import com.animewebsite.system.dto.res.VideosResponse;
 import com.animewebsite.system.dto.res.detail.AnimeDtoDetail;
 import com.animewebsite.system.dto.res.lazy.AnimeDtoLazy;
 import com.animewebsite.system.dto.res.PaginatedResponse;
 import com.animewebsite.system.model.*;
+import com.animewebsite.system.model.Character;
 import com.animewebsite.system.model.enums.Season;
 import com.animewebsite.system.model.enums.Status;
 import com.animewebsite.system.model.enums.Type;
@@ -18,6 +21,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -33,6 +38,8 @@ public class AnimeService {
     private final GenreRepository genreRepository;
     private final ProducerRepository producerRepository;
     private final StudioRepository studioRepository;
+    private final EpisodeRepository episodeRepository;
+    private final PromotionVideoRepository promotionVideoRepository;
     private final AlternativeTitleRepository alternativeTitleRepository;
     private final CloudinaryService cloudinaryService;
 
@@ -48,6 +55,73 @@ public class AnimeService {
                 animePage.getNumber() + 1,
                 animePage.getTotalElements()
         );
+    }
+
+    public PaginatedResponse<AnimeDtoLazy> getAllAnimeByGenre(int pageNum, int pageSize, String genreName){
+        Pageable pageable = PageRequest.of(pageNum - 1,pageSize);
+
+        Page<Anime> animePage = animeRepository.findByGenresName(List.of(genreName),pageable);
+
+        return new PaginatedResponse<>(
+                animePage.getContent().stream().map(animeMapper::animeToAnimeDtoLazy).toList(),
+                animePage.getTotalPages(),
+                animePage.getNumber() + 1,
+                animePage.getTotalElements()
+        );
+    }
+
+    public PaginatedResponse<AnimeDtoLazy> getAllRecommendAnime(int pageNum, int pageSize, List<String> genresName){
+        Pageable pageable = PageRequest.of(pageNum - 1,pageSize);
+
+        Page<Anime> animePage = animeRepository.findByGenresName(genresName,pageable);
+
+        return new PaginatedResponse<>(
+                animePage.getContent().stream().map(animeMapper::animeToAnimeDtoLazy).toList(),
+                animePage.getTotalPages(),
+                animePage.getNumber() + 1,
+                animePage.getTotalElements()
+        );
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////
+    // Co the bo ham nay
+    public VideosResponse getAnimeVideos(Long id, int pageNum, int pageSize){
+
+        Page<Episode> episodes = episodeRepository
+                .findAllByAnimeId(id,PageRequest.of(pageNum - 1,pageSize,Sort.by("episode")));
+
+        Page<PromotionVideo> promotionVideos = promotionVideoRepository
+                .findAllByAnimeId(id,PageRequest.of(1, 10, Sort.by("createDate")));
+        return VideosResponse
+                .builder()
+                .episodes(new PaginatedResponse<>(
+                            episodes.getContent(),
+                            episodes.getTotalPages(),
+                            episodes.getNumber(),
+                            episodes.getTotalElements()))
+                .promtionVideos(new PaginatedResponse<>(
+                        promotionVideos.getContent(),
+                        promotionVideos.getTotalPages(),
+                        promotionVideos.getNumber(),
+                        promotionVideos.getTotalElements()))
+                .build();
+    }
+    ////////////////////////////////////////////////////////////////////////////////
+
+    public Object getAnimeEpisodes(Long id, int pageNum, int pageSize){
+        Page<Episode> episodes = episodeRepository
+                .findAllByAnimeId(id,PageRequest.of(pageNum - 1,pageSize,Sort.by("episode")));
+        return new PaginatedResponse<>(
+                episodes.getContent(),
+                episodes.getTotalPages(),
+                episodes.getNumber(),
+                episodes.getTotalElements());
+    }
+
+    public Object getAnimeEpisodeById(Long animeId, Long episodeId){
+        return episodeRepository
+                .findByIdAndAnimeId(episodeId,animeId)
+                .orElseThrow(()->new RuntimeException("Khong tim thay episode id" + episodeId));
     }
 
     public PaginatedResponse<AnimeDtoLazy> getAllAnimeBySeriesId(int pageNum, int pageSize, Long seriesId){
@@ -82,6 +156,7 @@ public class AnimeService {
     }
 
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
     public AnimeDtoLazy createAnime(CreateAnimeRequest createAnimeRequest, MultipartFile multipartFile){
         String nameRequest = createAnimeRequest.getName();
 
@@ -179,6 +254,7 @@ public class AnimeService {
     }
 
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
     public AnimeDtoLazy updateAnime(Long id, UpdateAnimeRequest updateAnimeRequest,MultipartFile multipartFile){
 
         Anime existAnime = animeRepository.findById(id)
@@ -210,7 +286,7 @@ public class AnimeService {
                             .smallImageUrl(imagesUrl.get("small"))
                             .mediumImageUrl(imagesUrl.get("medium"))
                             .largeImageUrl(imagesUrl.get("large"))
-                            .mediumImageUrl(imagesUrl.get("maximum"))
+                            .maximumImageUrl(imagesUrl.get("maximum"))
                             .publicId(imagesUrl.get("publicId"))
                             .build();
                     existAnime.setImage(image);
@@ -293,6 +369,7 @@ public class AnimeService {
 
 
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
     public void deleteAnimeById(Long id){
         Anime anime = animeRepository
                 .findById(id, NamedEntityGraph.fetching("anime-with-alternative_name-image-genre-producer-studio"))

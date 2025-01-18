@@ -2,6 +2,7 @@ package com.animewebsite.system.controller;
 
 import com.animewebsite.system.dto.DataResponse;
 import com.animewebsite.system.dto.req.AnimeCharacterVoiceActorRequest;
+import com.animewebsite.system.dto.req.ChangeCharacterRoleRequest;
 import com.animewebsite.system.dto.res.lazy.anime_character_voiceactor.AnimeCharacterVoiceActorDtoLazy;
 import com.animewebsite.system.id_convert.AnimeCharacterVoiceActorIdConverter;
 import com.animewebsite.system.model.AnimeCharacterVoiceActor;
@@ -26,16 +27,32 @@ public class AnimeCharacterVoiceActorAssociationController {
                                                         @PathVariable("option") String option,
                                                         @RequestParam(value = "pageNum",required = false,defaultValue = "1") Integer pageNum,
                                                         @RequestParam(value = "pageSize",required = false,defaultValue = "10") Integer pageSize){
+        var result = animeCharacterVoiceActorService.getAllRelationshipByOption(id,option,pageNum,pageSize);
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(
                         new DataResponse(
                                 HttpStatus.OK.value(),
-                                animeCharacterVoiceActorService.getAllRelationshipByOption(id,option,pageNum,pageSize)
+                                result
                         )
                 );
     }
 
+    @GetMapping("/c-and-va/anime_id={id}")
+    public ResponseEntity<?> getAllCharacterWithTheirVoiceActorByAnimeId(@PathVariable("id") Long id ,
+                                                        @RequestParam(value = "pageNum",required = false,defaultValue = "1") Integer pageNum,
+                                                        @RequestParam(value = "pageSize",required = false,defaultValue = "10") Integer pageSize){
+        var result = animeCharacterVoiceActorService.getAllCharacterWithTheirVoiceActorByAnimeId(id,pageNum,pageSize);
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(
+                        new DataResponse(
+                                HttpStatus.OK.value(),
+                                result
+                        )
+                );
+    }
+    
     @PostMapping("/create/link")
     public ResponseEntity<?> handleLinkAssociations(@RequestBody AnimeCharacterVoiceActorRequest animeCharacterVoiceActorRequest){
         return ResponseEntity
@@ -48,7 +65,7 @@ public class AnimeCharacterVoiceActorAssociationController {
                 );
     }
 
-    @PostMapping("/update/link/{id}")
+    @PutMapping("/update/link/{id}")
     public ResponseEntity<?> handleUnLinkAssociations(@PathVariable("id") String id, @RequestBody AnimeCharacterVoiceActorRequest animeCharacterVoiceActorRequest){
         AnimeCharacterVoiceActorId animeCharacterVoiceActorId = (AnimeCharacterVoiceActorId) animeCharacterVoiceActorIdConverter.fromRequestId(id, AnimeCharacterVoiceActor.class);
         return ResponseEntity
@@ -57,6 +74,19 @@ public class AnimeCharacterVoiceActorAssociationController {
                         new DataResponse(
                                 HttpStatus.OK.value(),
                                 animeCharacterVoiceActorService.updateLinkRelationsAnimeCharacterVoiceActor(animeCharacterVoiceActorId,animeCharacterVoiceActorRequest)
+                        )
+                );
+    }
+
+    @PostMapping("/update/link/character_role")
+    public ResponseEntity<?> changeCharacterRoleOfCharacterInAnime(@RequestBody ChangeCharacterRoleRequest request){
+        animeCharacterVoiceActorService.updateAllCharacterRoleOfCharacterInAnime(request);
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(
+                        new DataResponse(
+                                HttpStatus.OK.value(),
+                                "Thay doi thanh cong"
                         )
                 );
     }

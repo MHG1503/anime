@@ -1,15 +1,10 @@
 package com.animewebsite.system.service;
 
-import com.animewebsite.system.dto.req.EpisodeRequest;
 import com.animewebsite.system.dto.req.PromotionVideoRequest;
 import com.animewebsite.system.dto.res.PaginatedResponse;
-import com.animewebsite.system.integration.MinioChannel;
 import com.animewebsite.system.model.*;
 import com.animewebsite.system.repository.AnimeRepository;
 import com.animewebsite.system.repository.PromotionVideoRepository;
-import com.animewebsite.system.repository.VideoRepository;
-import com.cosium.spring.data.jpa.entity.graph.domain2.NamedEntityGraph;
-import io.minio.MinioClient;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -19,25 +14,38 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.function.Function;
 
 @Service
 @RequiredArgsConstructor
 public class PromotionVideoService {
     private final PromotionVideoRepository promotionVideoRepository;
     private final AnimeRepository animeRepository;
-    private final VideoRepository videoRepository;
 
     @Transactional
     @PreAuthorize("hasRole('ADMIN')")
     public PaginatedResponse<PromotionVideo> getAllPromotionVideos(int pageNum, int pageSize){
-        Pageable pageable = PageRequest.of(pageNum,pageSize);
+        Pageable pageable = PageRequest.of(pageNum - 1,pageSize);
 
-        Page<PromotionVideo> promotionVideos = promotionVideoRepository.findAll(pageable);
+        Page<PromotionVideo> promotionVideos =  promotionVideoRepository.findAll(pageable);
 
         return new PaginatedResponse<>(
                 promotionVideos.getContent(),
                 promotionVideos.getTotalPages(),
-                promotionVideos.getNumber(),
+                promotionVideos.getNumber() + 1,
+                promotionVideos.getTotalElements()
+        );
+    }
+    @Transactional
+    public PaginatedResponse<PromotionVideo> getAllPromotionVideosByAnimeId(Long id,Integer pageNum, Integer pageSize){
+        Pageable pageable = PageRequest.of(pageNum - 1,pageSize);
+
+        Page<PromotionVideo> promotionVideos = promotionVideoRepository.findAllByAnimeId(id,pageable);
+
+        return new PaginatedResponse<>(
+                promotionVideos.getContent(),
+                promotionVideos.getTotalPages(),
+                promotionVideos.getNumber() + 1,
                 promotionVideos.getTotalElements()
         );
     }
@@ -58,26 +66,15 @@ public class PromotionVideoService {
                 .findById(animeId)
                 .orElseThrow(()-> new RuntimeException("Khong tim thay anime id: " + animeId));
 
-        Video video = videoRepository.findByAnimeId(anime.getId(), NamedEntityGraph.fetching("video-with-promo"))
-                .orElse(
-                        Video
-                        .builder()
-                        .id(null)
-                        .anime(anime)
-                        .promo(new ArrayList<>())
-                        .build()
-                );
-        if(video.getId() == null){
-            video = videoRepository.save(video);
-        }
         // https://youtu.be/{youtubeId}
-        String youtubeId = request.getTrailerUrl().substring(17);
+        String youtubeId = request.getTrailerUrl().substring(request.getTrailerUrl().length() - 11);
         Trailer trailer = Trailer
                 .builder()
                 .videoUrl(request.getTrailerUrl())
                 .youtubeId(youtubeId)
                 .image(Image
                         .builder()
+                        .altTitle(null)
                         .imageUrl("https://img.youtube.com/vi/" + youtubeId + "/default.jpg")
                         .smallImageUrl("https://img.youtube.com/vi/" + youtubeId + "/sddefault.jpg")
                         .mediumImageUrl("https://img.youtube.com/vi/" + youtubeId + "/mqdefault.jpg")
@@ -92,17 +89,10 @@ public class PromotionVideoService {
                 .builder()
                 .title(request.getTitle())
                 .trailer(trailer)
+                .anime(anime)
                 .build();
 
-        video.getPromo().add(promotionVideo);
-
-        Video saveVideo = videoRepository.save(video);
-
-        return saveVideo.getPromo()
-                .stream()
-                .filter(pv -> pv.getTitle().equals(request.getTitle()))
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException("Them promotion video that bai!"));
+        return promotionVideoRepository.save(promotionVideo);
     }
 
 
@@ -119,23 +109,19 @@ public class PromotionVideoService {
                 .orElseThrow(()->new RuntimeException("Khong tim thay promotion video id: " + id));
 
         // https://youtu.be/{youtubeId}
-        String youtubeId = request.getTrailerUrl().substring(0,17);
-
+        String youtubeId = request.getTrailerUrl().substring(request.getTrailerUrl().length() - 11);
+        promotionVideo.setTitle(request.getTitle());
         promotionVideo.getTrailer().setVideoUrl(request.getTrailerUrl());
 
         promotionVideo.getTrailer().setYoutubeId(youtubeId);
 
-        promotionVideo.getTrailer().setImage
-                (       Image
-                        .builder()
-                        .imageUrl("https://img.youtube.com/vi/" + youtubeId + "/default.jpg")
-                        .smallImageUrl("https://img.youtube.com/vi/" + youtubeId + "/sddefault.jpg")
-                        .mediumImageUrl("https://img.youtube.com/vi/" + youtubeId + "/mqdefault.jpg")
-                        .largeImageUrl("https://img.youtube.com/vi/" + youtubeId + "/hqdefault.jpg")
-                        .maximumImageUrl("https://img.youtube.com/vi/" + youtubeId + "/maxresdefault.jpg")
-                        .publicId(null)
-                        .build()
-                );
+        promotionVideo.getTrailer().getImage().setImageUrl("https://img.youtube.com/vi/" + youtubeId + "/default.jpg");
+        promotionVideo.getTrailer().getImage().setSmallImageUrl("https://img.youtube.com/vi/" + youtubeId + "/sddefault.jpg");
+        promotionVideo.getTrailer().getImage().setMediumImageUrl("https://img.youtube.com/vi/" + youtubeId + "/mqdefault.jpg");
+        promotionVideo.getTrailer().getImage().setLargeImageUrl("https://img.youtube.com/vi/" + youtubeId + "/hqdefault.jpg");
+        promotionVideo.getTrailer().getImage().setMaximumImageUrl("https://img.youtube.com/vi/" + youtubeId + "/maxresdefault.jpg");
+        promotionVideo.getTrailer().getImage().setPublicId(null);
+        promotionVideo.getTrailer().getImage().setAltTitle(null);
 
         return promotionVideoRepository.save(promotionVideo);
     }

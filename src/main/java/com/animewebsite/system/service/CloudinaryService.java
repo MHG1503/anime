@@ -22,10 +22,10 @@ public class CloudinaryService {
         String publicId = (String) result.get("public_id");
 
         // Lấy URL cho từng kích thước khác nhau
-        String smallImageUrl = getResizedImageUrl(publicId, 150, 150);
-        String mediumImageUrl = getResizedImageUrl(publicId, 300, 300);
-        String largeImageUrl = getResizedImageUrl(publicId, 600, 600);
-        String maximumImageUrl = getResizedImageUrl(publicId, 1200, 1200);
+        String smallImageUrl = getResizedImageUrl(publicId, 150, 270);
+        String mediumImageUrl = getResizedImageUrl(publicId, 280, 400);
+        String largeImageUrl = getResizedImageUrl(publicId, 600, 720);
+        String maximumImageUrl = getResizedImageUrl(publicId, 1200, 1320);
 
         return new HashMap<>(Map.of(
                 "publicId",publicId,

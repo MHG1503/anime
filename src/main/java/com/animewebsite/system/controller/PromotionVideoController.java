@@ -16,18 +16,32 @@ import org.springframework.web.bind.annotation.*;
 public class PromotionVideoController {
     private final PromotionVideoService promotionVideoService;
 
+    @GetMapping
+    public ResponseEntity<?> getPromotionVideosByAnimeId(@RequestParam("pageNum") Integer pageNum,
+                                                         @RequestParam("pageSize") Integer pageSize,
+                                                         @RequestParam("animeId") Long animeId){
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(
+                        new DataResponse(
+                                HttpStatus.OK.value(),
+                                promotionVideoService.getAllPromotionVideosByAnimeId(animeId,pageNum,pageSize)
+                        )
+                );
+    }
+
+
     @PostMapping("/create")
     public ResponseEntity<?> addPromotionVideo(@RequestBody PromotionVideoRequest request){
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(
                         new DataResponse(
-                            HttpStatus.OK.value(),
+                            HttpStatus.CREATED.value(),
                             promotionVideoService.createAndAddPromotionVideo(request)
                         )
                 );
     }
-
 
 
     @PutMapping("/update/{id}")

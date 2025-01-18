@@ -20,6 +20,19 @@ import javax.print.attribute.standard.Media;
 public class CharacterController {
     private final CharacterService characterService;
 
+    @GetMapping("/full-info/{id}")
+    public ResponseEntity<?> findCharacterWithAnimeAndVoiceActors(@PathVariable("id") Long id ){
+        var result = characterService.getCharacterDetails(id);
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(
+                        new DataResponse(
+                                HttpStatus.OK.value(),
+                                result
+                        )
+                );
+    }
+
     @GetMapping
     public ResponseEntity<?> getAllCharacters(@RequestParam(value = "pageNum",defaultValue = "1",required = false) Integer pageNum,
                                               @RequestParam(value = "pageSize", defaultValue = "15",required = false) Integer pageSize){

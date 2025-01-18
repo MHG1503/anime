@@ -1,6 +1,7 @@
 package com.animewebsite.system.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import java.util.Date;
 
@@ -17,9 +18,11 @@ public class ForgotPassword {
     private Long id;
 
     @Column(nullable = false)
+    @NotNull
     private Integer otp;
 
     @Column(nullable = false)
+    @NotNull
     private Date expirationDate;
 
     @OneToOne

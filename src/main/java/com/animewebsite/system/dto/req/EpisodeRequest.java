@@ -1,10 +1,10 @@
 package com.animewebsite.system.dto.req;
 
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-import org.springframework.web.multipart.MultipartFile;
 
 @Getter
 @Setter
@@ -13,6 +13,6 @@ public class EpisodeRequest {
     private Long animeId;
     @NotBlank
     private String title;
-    @NotBlank
-    private String episode;
+    @Min(1)
+    private Integer episode;
 }

@@ -17,6 +17,9 @@ public class Image {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "alt_title")
+    private String altTitle;
+
     @Column(name = "image_url",length = 2000)
     private String imageUrl;
 

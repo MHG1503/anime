@@ -9,4 +9,8 @@ import lombok.Setter;
 public class ImageDtoLazy {
     private Long id;
     private String imageUrl;
+
+    public ImageDtoLazy(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
 }
